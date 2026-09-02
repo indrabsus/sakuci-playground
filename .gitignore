@@ -1,0 +1,16 @@
+# Temporary run directories
+data/temp/*
+!data/temp/.gitkeep
+
+# SQLite Journals & temporary files
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+
+# OS metadata
+Thumbs.db
+.DS_Store
+
+# IDE configuration
+.vscode/
+.idea/

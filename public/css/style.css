@@ -1,0 +1,224 @@
+/* Sakuci PHP & MySQL Ground - Custom Stylesheet */
+
+:root {
+    --bg-main: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-card: #21262d;
+    --bg-hover: #30363d;
+    --border-color: #30363d;
+    --text-primary: #f0f6fc;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --accent-blue: #38bdf8;
+    --accent-indigo: #818cf8;
+    --accent-green: #34d399;
+    --accent-red: #f87171;
+    --accent-yellow: #fbbf24;
+    --accent-purple: #c084fc;
+}
+
+[data-theme="light"] {
+    --bg-main: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: #ffffff;
+    --bg-hover: #e2e8f0;
+    --border-color: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent-blue: #0284c7;
+    --accent-indigo: #4f46e5;
+    --accent-green: #059669;
+    --accent-red: #dc2626;
+    --accent-yellow: #d97706;
+    --accent-purple: #7c3aed;
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    overflow: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* Horizontal File Tabs Bar */
+.file-tabs-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+}
+.file-tabs-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+/* File Tree Item Styling */
+.tree-item {
+    transition: background-color 0.1s ease;
+}
+.tree-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.tree-item.active {
+    background-color: rgba(56, 189, 248, 0.12);
+    color: var(--accent-blue);
+    border-left: 2px solid var(--accent-blue);
+}
+.tree-actions {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+.tree-item:hover .tree-actions {
+    opacity: 1;
+}
+
+/* Split Pane Resizer (Desktop Only) */
+.resizer-x {
+    width: 6px;
+    cursor: col-resize;
+    background-color: var(--border-color);
+    transition: background-color 0.2s;
+    z-index: 10;
+}
+.resizer-x:hover, .resizer-x.is-dragging {
+    background-color: var(--accent-blue);
+}
+
+/* Terminal Console Styling */
+.terminal-font {
+    font-family: "JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Tab Active Styles */
+.panel-tab {
+    transition: all 0.15s ease-in-out;
+    border-bottom: 2px solid transparent;
+}
+.panel-tab.active {
+    color: var(--accent-blue);
+    border-bottom-color: var(--accent-blue);
+    background-color: rgba(56, 189, 248, 0.08);
+}
+
+/* Bottom Nav Active Styles (Mobile) */
+.mobile-nav-btn {
+    transition: color 0.15s ease-in-out;
+}
+.mobile-nav-btn.active {
+    color: var(--accent-blue);
+}
+.mobile-nav-btn.active svg {
+    stroke: var(--accent-blue);
+    stroke-width: 2.2;
+}
+
+/* Table styling for Database Viewer */
+.db-table-grid {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+.db-table-grid th {
+    background-color: var(--bg-card);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    border-bottom: 2px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+.db-table-grid td {
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+}
+.db-table-grid tr:hover td {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Running Pulse Animation */
+@keyframes pulseGlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(0.98); }
+}
+.running-pulse {
+    animation: pulseGlow 1s infinite ease-in-out;
+}
+
+/* Mobile Responsiveness Rules (< 768px) */
+@media (max-width: 767px) {
+    .resizer-x {
+        display: none !important;
+    }
+
+    #workspace-container {
+        padding-bottom: 56px;
+    }
+
+    /* Mobile View 1: Berkas (File & Folder Explorer) */
+    body.mobile-view-files #left-pane {
+        width: 100% !important;
+        display: flex !important;
+    }
+    body.mobile-view-files #file-explorer-sidebar {
+        width: 100% !important;
+        display: flex !important;
+    }
+    body.mobile-view-files #monaco-editor-container,
+    body.mobile-view-files #open-tabs-bar,
+    body.mobile-view-files #editor-status-bar,
+    body.mobile-view-files #right-pane {
+        display: none !important;
+    }
+
+    /* Mobile View 2: Editor (100% Monaco Editor) */
+    body.mobile-view-editor #left-pane {
+        width: 100% !important;
+        display: flex !important;
+    }
+    body.mobile-view-editor #file-explorer-sidebar {
+        display: none !important;
+    }
+    body.mobile-view-editor #monaco-editor-container {
+        display: block !important;
+        width: 100% !important;
+    }
+    body.mobile-view-editor #open-tabs-bar {
+        display: flex !important;
+    }
+    body.mobile-view-editor #editor-status-bar {
+        display: flex !important;
+    }
+    body.mobile-view-editor #right-pane {
+        display: none !important;
+    }
+
+    /* Mobile View 3, 4, 5: Right Pane (Console, HTML, DB) */
+    body.mobile-view-other #left-pane {
+        display: none !important;
+    }
+    body.mobile-view-other #right-pane {
+        width: 100% !important;
+        display: flex !important;
+    }
+}

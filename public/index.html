@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sakuci PHP & MySQL Ground - Playground Pembelajaran Interaktif</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <!-- Monaco Editor Loader -->
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/editor/editor.main.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+    </script>
+</head>
+<body class="h-screen flex flex-col bg-[#0d1117] text-gray-100 overflow-hidden select-none mobile-view-editor">
+
+    <!-- Top Navigation Bar -->
+    <header class="h-14 border-b border-[#30363d] bg-[#161b22] px-3 md:px-4 flex items-center justify-between z-20 shrink-0">
+        <!-- Logo & Branding -->
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center font-bold text-white shadow-md text-base shrink-0">
+                🐘
+            </div>
+            <div class="truncate">
+                <h1 class="font-bold text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
+                    <span class="truncate">Sakuci Ground</span>
+                    <span class="hidden sm:inline-block text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono font-normal">PHP 8.3</span>
+                </h1>
+                <p class="text-[10px] text-gray-400 hidden sm:block">PHP & MySQL Playground</p>
+            </div>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <!-- Run Code Button -->
+            <button id="btn-run-code" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0">
+                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Jalankan</span>
+                <span class="hidden md:inline-block text-[10px] px-1 py-0.2 rounded bg-sky-700/80 font-mono ml-0.5">Ctrl+Enter</span>
+            </button>
+
+            <!-- Format Code Button -->
+            <button id="btn-format-code" title="Rapikan Format Kode" class="hidden sm:flex px-2 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded-md text-xs font-medium border border-[#30363d] transition items-center gap-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                <span class="hidden lg:inline">Format</span>
+            </button>
+
+            <!-- Reset Code Button -->
+            <button id="btn-reset-code" title="Reset ke Kode Awal" class="hidden sm:block px-2 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded-md text-xs font-medium border border-[#30363d] transition">
+                Reset
+            </button>
+
+            <div class="h-4 w-[1px] bg-[#30363d] mx-0.5 sm:mx-1"></div>
+
+            <!-- Database Status & Settings Button -->
+            <button id="btn-open-db-settings" title="Informasi Database MySQL (localhost, root, '', latihan)" class="px-2 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded-md text-xs font-medium border border-[#30363d] transition flex items-center gap-1 shrink-0">
+                <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v8m-4-4h8"></path></svg>
+                <span id="db-active-driver-badge" class="px-1.5 py-0.2 rounded font-mono text-[10px] bg-blue-950 text-blue-300 border border-blue-800">MySQL 8.0</span>
+            </button>
+
+            <!-- Theme Toggle Button -->
+            <button id="btn-toggle-theme" title="Ganti Tema (Gelap / Terang)" class="p-1.5 text-gray-400 hover:text-white rounded-md hover:bg-[#21262d] transition shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace (Responsive Split on Desktop, Single View on Mobile) -->
+    <main id="workspace-container" class="flex-1 flex overflow-hidden relative">
+
+        <!-- Left Pane: File & Folder Explorer Sidebar + Code Editor -->
+        <section id="left-pane" class="w-full md:w-1/2 flex flex-col bg-[#0d1117] border-r border-[#30363d] relative">
+            
+            <!-- Editor Top Bar: Sidebar Toggle + Open Tabs List + Actions -->
+            <div id="open-tabs-bar" class="h-10 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-2 shrink-0 gap-2">
+                <div class="flex items-center gap-1.5 flex-1 overflow-hidden">
+                    <!-- Toggle Sidebar Button (Desktop) -->
+                    <button id="btn-toggle-sidebar" title="Buka/Tutup Sidebar Penjelajah File" 
+                        class="hidden md:flex p-1.5 text-gray-400 hover:text-white hover:bg-[#21262d] rounded transition shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
+                    </button>
+
+                    <!-- Scrollable Open Tabs Bar -->
+                    <div class="flex items-center file-tabs-scroll flex-1 overflow-x-auto gap-1 py-1" id="open-tabs-list">
+                        <!-- Dynamic Open Tabs Rendered by App.renderOpenTabs() -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workspace Body: Sidebar + Monaco Editor -->
+            <div class="flex-1 flex overflow-hidden relative">
+
+                <!-- File & Folder Explorer Sidebar -->
+                <aside id="file-explorer-sidebar" class="w-48 sm:w-56 bg-[#161b22] border-r border-[#30363d] flex flex-col shrink-0 h-full overflow-hidden transition-all duration-150">
+                    <!-- Sidebar Header -->
+                    <div class="h-8 px-2.5 border-b border-[#21262d] bg-[#1c2128] flex items-center justify-between shrink-0">
+                        <span class="text-[10px] font-bold text-gray-400 tracking-wider uppercase font-mono">Penjelajah</span>
+                        <div class="flex items-center gap-0.5">
+                            <button id="btn-explorer-add-file" title="Tambah File PHP Baru" 
+                                class="p-1 text-gray-400 hover:text-sky-400 hover:bg-[#21262d] rounded transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            </button>
+                            <button id="btn-explorer-add-folder" title="Tambah Folder Baru" 
+                                class="p-1 text-gray-400 hover:text-amber-400 hover:bg-[#21262d] rounded transition">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                            </button>
+                            <button id="btn-close-sidebar" title="Tutup Sidebar" 
+                                class="p-1 text-gray-400 hover:text-gray-200 hover:bg-[#21262d] rounded transition md:hidden">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Tree List Container -->
+                    <div id="explorer-tree-list" class="flex-1 overflow-auto p-1.5 space-y-0.5">
+                        <!-- Dynamic Tree Items Rendered by App.renderExplorer() -->
+                    </div>
+
+                    <!-- Sidebar Footer Info -->
+                    <div class="p-1.5 border-t border-[#21262d] bg-[#161b22] text-[10px] text-gray-500 font-mono flex items-center justify-between shrink-0">
+                        <span>Root: /</span>
+                        <span>PHP File Tree</span>
+                    </div>
+                </aside>
+
+                <!-- Monaco Editor Container -->
+                <div id="monaco-editor-container" class="flex-1 w-full h-full overflow-hidden"></div>
+            </div>
+
+            <!-- Editor Status Footer -->
+            <div id="editor-status-bar" class="h-6 bg-[#161b22] border-t border-[#30363d] px-3 flex items-center justify-between text-[10px] sm:text-[11px] text-gray-400 font-mono shrink-0">
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <span id="editor-cursor-pos">Ln 1, Col 1</span>
+                    <span class="hidden sm:inline">UTF-8</span>
+                    <span>PHP</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-[10px]">Siap</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Vertical Resizer Handle (Desktop Only) -->
+        <div id="split-resizer" class="resizer-x hidden md:block shrink-0" title="Geser untuk mengubah ukuran panel"></div>
+
+        <!-- Right Pane: Tabs & Results (Console, HTML, DB, Docs) -->
+        <section id="right-pane" class="w-full md:w-1/2 flex flex-col bg-[#0d1117] overflow-hidden">
+            <!-- Right Panel Tab Navigation (Desktop Header) -->
+            <div class="h-9 bg-[#161b22] border-b border-[#30363d] flex items-center justify-between px-2 shrink-0">
+                <nav class="flex items-center gap-1">
+                    <button id="tab-btn-console" class="panel-tab active px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-t text-gray-300 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span>Konsol</span>
+                    </button>
+                    <button id="tab-btn-html" class="panel-tab px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-t text-gray-400 hover:text-gray-200 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+                        <span>HTML</span>
+                    </button>
+                    <button id="tab-btn-db" class="panel-tab px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-t text-gray-400 hover:text-gray-200 flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v8m-4-4h8"></path></svg>
+                        <span>Database</span>
+                    </button>
+                </nav>
+
+                <!-- Metrics & Status -->
+                <div class="flex items-center gap-1.5 sm:gap-2 pr-1 sm:pr-2">
+                    <span id="metric-exec-time" class="text-[10px] sm:text-[11px] font-mono text-gray-400">0 ms</span>
+                    <span id="metric-status" class="px-1.5 py-0.2 rounded text-[10px] font-mono bg-gray-800 text-gray-300 border border-gray-700">Siap</span>
+                </div>
+            </div>
+
+            <!-- TAB 1: Console Output Pane -->
+            <div id="tab-pane-console" class="flex-1 flex flex-col overflow-hidden bg-[#0d1117]">
+                <div class="p-2 border-b border-[#21262d] bg-[#161b22]/50 flex items-center justify-between text-xs">
+                    <span class="text-gray-400 font-mono text-[11px]">Output Terminal Standar (stdout & stderr)</span>
+                    <button id="btn-clear-console" class="text-gray-400 hover:text-gray-200 text-xs px-2 py-0.5 rounded hover:bg-[#21262d] transition">
+                        Bersihkan
+                    </button>
+                </div>
+                <div id="console-output-content" class="flex-1 p-3 sm:p-4 overflow-auto terminal-font text-gray-200 leading-relaxed select-text">
+                    <div class="text-gray-500 italic p-2 text-xs">Konsol siap. Tulis kode PHP dan klik "Jalankan" (atau Ctrl+Enter).</div>
+                </div>
+            </div>
+
+            <!-- TAB 2: HTML Preview Pane -->
+            <div id="tab-pane-html" class="flex-1 flex flex-col overflow-hidden hidden bg-white">
+                <div class="p-2 border-b border-[#cbd5e1] bg-slate-100 flex items-center justify-between text-xs text-slate-600">
+                    <span class="font-medium">Live HTML Render (Output `echo` tag HTML)</span>
+                </div>
+                <iframe id="html-preview-frame" class="w-full flex-1 border-none bg-white"></iframe>
+            </div>
+
+            <!-- TAB 3: Database Manager Pane -->
+            <div id="tab-pane-db" class="flex-1 flex flex-col overflow-hidden hidden bg-[#0d1117]">
+                <!-- DB Manager Sub-Header -->
+                <div class="p-2 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between">
+                    <span class="text-xs font-semibold text-gray-200">🗄️ Penjelajah Database</span>
+                    <button id="btn-seed-db" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-medium transition flex items-center gap-1">
+                        <span>🌱</span> <span class="hidden sm:inline">Seed Data</span>
+                    </button>
+                </div>
+
+                <div class="flex-1 flex flex-col sm:flex-row overflow-hidden">
+                    <!-- Left Sidebar: Tables List -->
+                    <div class="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-[#30363d] bg-[#161b22]/50 p-2 flex flex-col shrink-0 max-h-32 sm:max-h-full">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-1 mb-1">
+                            Daftar Tabel
+                        </div>
+                        <div id="db-tables-list" class="flex-1 overflow-auto flex sm:flex-col gap-1 sm:gap-0 sm:space-y-1"></div>
+                    </div>
+
+                    <!-- Right Main: Table Data & Query Console -->
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <!-- Table Data Container -->
+                        <div id="db-table-content" class="flex-1 overflow-auto border-b border-[#30363d]"></div>
+
+                        <!-- Direct SQL Query Console -->
+                        <div class="h-48 sm:h-52 bg-[#161b22] p-2.5 flex flex-col shrink-0 border-t border-[#30363d]">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <span class="text-xs font-semibold text-gray-300">⚡ Konsol SQL</span>
+                                <button id="btn-run-sql" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold transition">
+                                    Jalankan SQL
+                                </button>
+                            </div>
+                            <textarea id="sql-query-input" placeholder="Tulis query SQL, contoh: SELECT * FROM mahasiswa LIMIT 5;" 
+                                class="w-full h-14 p-2 bg-[#0d1117] border border-[#30363d] rounded text-xs font-mono text-gray-200 outline-none focus:border-sky-500 resize-none"></textarea>
+                            <div id="sql-query-result" class="mt-1.5 flex-1 overflow-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Bottom Navigation Bar (Mobile Only: Screens < 768px) -->
+    <nav class="fixed bottom-0 left-0 right-0 h-14 bg-[#161b22] border-t border-[#30363d] flex items-center justify-around z-30 md:hidden px-1">
+        <button id="mobile-nav-files" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+            <span class="text-[10px] font-medium">Berkas</span>
+        </button>
+        <button id="mobile-nav-editor" class="mobile-nav-btn active flex flex-col items-center justify-center flex-1 py-1 text-gray-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            <span class="text-[10px] font-medium">Editor</span>
+        </button>
+        <button id="mobile-nav-console" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            <span class="text-[10px] font-medium">Konsol</span>
+        </button>
+        <button id="mobile-nav-html" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+            <span class="text-[10px] font-medium">HTML</span>
+        </button>
+        <button id="mobile-nav-db" class="mobile-nav-btn flex flex-col items-center justify-center flex-1 py-1 text-gray-400">
+            <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v8m-4-4h8"></path></svg>
+            <span class="text-[10px] font-medium">Database</span>
+        </button>
+    </nav>
+
+    <!-- Modal Buat File Baru -->
+    <div id="modal-create-file" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden px-4">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl w-full max-w-sm p-5 shadow-2xl">
+            <h3 class="font-bold text-sm text-white mb-1 flex items-center gap-1.5">
+                <span>📄</span> Buat File PHP Baru
+            </h3>
+            <p id="label-target-folder-file" class="text-[11px] font-mono text-sky-400 mb-3"></p>
+            <input id="input-create-file-name" type="text" placeholder="contoh: User.php atau database.php" 
+                class="w-full px-3 py-2 bg-[#0d1117] border border-[#30363d] rounded text-xs font-mono text-gray-200 outline-none focus:border-sky-500 mb-4">
+            <div class="flex items-center justify-end gap-2">
+                <button id="btn-cancel-create-file" class="px-3 py-1.5 text-gray-400 hover:text-gray-200 text-xs">
+                    Batal
+                </button>
+                <button id="btn-confirm-create-file" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold transition">
+                    Buat File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Buat Folder Baru -->
+    <div id="modal-create-folder" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden px-4">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl w-full max-w-sm p-5 shadow-2xl">
+            <h3 class="font-bold text-sm text-white mb-1 flex items-center gap-1.5">
+                <span>📁</span> Buat Folder Baru
+            </h3>
+            <p id="label-target-folder-dir" class="text-[11px] font-mono text-amber-400 mb-3"></p>
+            <input id="input-create-folder-name" type="text" placeholder="contoh: models, config, atau classes" 
+                class="w-full px-3 py-2 bg-[#0d1117] border border-[#30363d] rounded text-xs font-mono text-gray-200 outline-none focus:border-sky-500 mb-4">
+            <div class="flex items-center justify-end gap-2">
+                <button id="btn-cancel-create-folder" class="px-3 py-1.5 text-gray-400 hover:text-gray-200 text-xs">
+                    Batal
+                </button>
+                <button id="btn-confirm-create-folder" class="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded text-xs font-semibold transition">
+                    Buat Folder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Konfigurasi Database -->
+    <div id="db-settings-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden px-4">
+        <div class="bg-[#161b22] border border-[#30363d] rounded-xl w-full max-w-md p-5 shadow-2xl">
+            <div class="flex items-center justify-between pb-3 border-b border-[#30363d] mb-4">
+                <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                    <span>🗄️</span> Database Simulasi MySQL 8.0
+                </h3>
+                <button id="btn-close-db-modal" class="text-gray-400 hover:text-white text-sm">✕</button>
+            </div>
+
+            <div class="space-y-3.5 text-xs">
+                <div class="p-3 bg-blue-950/40 border border-blue-800/80 rounded-lg text-blue-200">
+                    <div class="font-semibold mb-1 flex items-center gap-1.5 text-blue-300">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        Simulasi MySQL 8.0 Otomatis Terhubung
+                    </div>
+                    <p class="text-[11px] text-blue-300/90 leading-relaxed">
+                        Tanpa perlu setup MySQL server terpisah. Sistem otomatis mensimulasikan MySQL dengan kredensial standar pembelajaran di bawah ini:
+                    </p>
+                </div>
+
+                <div class="space-y-2 bg-[#0d1117] p-3 rounded-lg border border-[#30363d] font-mono text-xs">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Host:</span>
+                        <span class="text-sky-400 font-semibold">localhost</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Port:</span>
+                        <span class="text-sky-400 font-semibold">3306</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">User:</span>
+                        <span class="text-sky-400 font-semibold">root</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Password:</span>
+                        <span class="text-sky-400 font-semibold">"" (kosong)</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">Database:</span>
+                        <span class="text-sky-400 font-semibold">latihan</span>
+                    </div>
+                </div>
+
+                <div class="text-[11px] text-gray-400 space-y-1.5">
+                    <div class="font-medium text-gray-300">Contoh kode yang langsung dapat dijalankan:</div>
+                    <code class="block p-1.5 bg-[#0d1117] rounded text-emerald-400 font-mono text-[10px]">
+                        $koneksi = mysqli_connect("localhost", "root", "", "latihan");
+                    </code>
+                    <code class="block p-1.5 bg-[#0d1117] rounded text-sky-400 font-mono text-[10px]">
+                        $pdo = new PDO("mysql:host=localhost;dbname=latihan", "root", "");
+                    </code>
+                </div>
+
+                <div id="db-modal-feedback" class="min-h-[20px] text-xs font-mono"></div>
+            </div>
+
+            <div class="flex items-center justify-between pt-4 border-t border-[#30363d] mt-4">
+                <button id="btn-test-db-modal" class="px-3 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded text-xs font-medium border border-[#30363d] transition">
+                    🔍 Uji Koneksi
+                </button>
+                <button onclick="document.getElementById('db-settings-modal').classList.add('hidden')" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded text-xs font-semibold transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Scripts -->
+    <script src="/js/curriculum.js"></script>
+    <script src="/js/editor.js"></script>
+    <script src="/js/db-manager.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
