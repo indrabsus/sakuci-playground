@@ -195,6 +195,11 @@ class Runner
                 mkdir($parentDir, 0777, true);
             }
 
+            // Normalisasi kompatibilitas deklarasi tipe Model Sakuci (?string)
+            if (str_ends_with(strtolower($safeRelativePath), '.php')) {
+                $content = preg_replace('/protected\s+static\s+string\s+\$table\b/', 'protected static ?string $table', $content);
+            }
+
             file_put_contents($fullPath, $content);
         }
 

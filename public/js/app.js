@@ -423,6 +423,10 @@ window.App = {
             if (savedFiles) {
                 const parsed = JSON.parse(savedFiles);
                 if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+                    // Auto-fix kompatibilitas tipe deklarasi Model Sakuci
+                    if (parsed['app/Models/Mahasiswa.php']) {
+                        parsed['app/Models/Mahasiswa.php'] = parsed['app/Models/Mahasiswa.php'].replace('protected static string $table', 'protected static ?string $table');
+                    }
                     this.files = parsed;
                     this.folders = savedFolders ? JSON.parse(savedFolders) : [];
                     this.openTabs = savedTabs ? JSON.parse(savedTabs) : Object.keys(this.files);
