@@ -18,23 +18,37 @@
 <body class="h-screen flex flex-col bg-[#0d1117] text-gray-100 overflow-hidden select-none mobile-view-editor">
 
     <!-- Top Navigation Bar -->
-    <header class="h-14 border-b border-[#30363d] bg-[#161b22] px-3 md:px-4 flex items-center justify-between z-20 shrink-0">
+    <header class="h-14 border-b border-[#30363d] bg-[#161b22] px-3 md:px-4 flex items-center justify-between z-20 shrink-0 gap-2">
         <!-- Logo & Branding -->
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2.5 shrink-0">
             <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center font-bold text-white shadow-md text-base shrink-0">
                 🐘
             </div>
             <div class="truncate">
                 <h1 class="font-bold text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
                     <span class="truncate">Sakuci Ground</span>
-                    <span class="hidden sm:inline-block text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono font-normal">PHP 8.3</span>
+                    <span id="app-mode-badge" class="hidden sm:inline-block text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono font-normal">PHP 8.3 Murni</span>
                 </h1>
                 <p class="text-[10px] text-gray-400 hidden sm:block">PHP & MySQL Playground</p>
             </div>
         </div>
 
+        <!-- Mode Switcher: PHP Murni vs Sakuci Framework -->
+        <div class="flex items-center bg-[#0d1117] p-0.5 rounded-lg border border-[#30363d] text-xs font-medium shrink-0">
+            <button id="btn-mode-native" onclick="App.switchMode('native')" title="Beralih ke Mode PHP Murni" 
+                class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5 bg-[#21262d] text-white shadow font-semibold">
+                <span class="text-xs">🐘</span>
+                <span class="text-[11px] hidden sm:inline">PHP Murni</span>
+            </button>
+            <button id="btn-mode-framework" onclick="App.switchMode('framework')" title="Beralih ke Mode Sakuci Framework" 
+                class="px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200">
+                <span class="text-xs">⚡</span>
+                <span class="text-[11px] hidden sm:inline">Sakuci Framework</span>
+            </button>
+        </div>
+
         <!-- Action Toolbar -->
-        <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <!-- Run Code Button -->
             <button id="btn-run-code" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0">
                 <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -190,8 +204,16 @@
 
             <!-- TAB 2: HTML Preview Pane -->
             <div id="tab-pane-html" class="flex-1 flex flex-col overflow-hidden hidden bg-white">
-                <div class="p-2 border-b border-[#cbd5e1] bg-slate-100 flex items-center justify-between text-xs text-slate-600">
-                    <span class="font-medium">Live HTML Render (Output `echo` tag HTML)</span>
+                <!-- URL Address Bar (Aktif di Mode Sakuci Framework) -->
+                <div id="framework-route-bar" class="p-1.5 border-b border-[#cbd5e1] bg-slate-100 flex items-center gap-2 text-xs text-slate-700 shrink-0 hidden">
+                    <div class="flex items-center gap-1 bg-white border border-slate-300 rounded px-2.5 py-1 flex-1 shadow-sm font-mono text-xs">
+                        <span class="text-slate-400 select-none">http://localhost:8000</span>
+                        <input id="framework-route-input" type="text" value="/" placeholder="/route" class="flex-1 outline-none text-slate-800 bg-transparent font-medium">
+                    </div>
+                    <button id="btn-visit-route" class="px-3 py-1 bg-sky-600 hover:bg-sky-500 text-white rounded font-medium shadow-sm transition flex items-center gap-1 text-xs">
+                        <span>Buka</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
                 </div>
                 <iframe id="html-preview-frame" class="w-full flex-1 border-none bg-white"></iframe>
             </div>

@@ -8,13 +8,27 @@ use PDO;
 class Runner
 {
     /**
-     * Jalankan script PHP multi-file dalam proses terisolasi (sandbox)
-     *
-     * @param array<string, string> $files Array asosiatif ['nama_file.php' => 'isi_kode']
-     * @param string $entrypoint File utama yang dieksekusi (default: index.php)
-     * @return array Hasil eksekusi
+     * Jalankan kode pengguna (Mode PHP Murni atau Sakuci Framework)
      */
-    public static function run(array $files, string $entrypoint = 'index.php'): array
+    public static function run(
+        array $files, 
+        string $entrypoint = 'index.php', 
+        string $mode = 'native', 
+        string $routeUri = '/', 
+        string $httpMethod = 'GET'
+    ): array
+    {
+        if ($mode === 'framework') {
+            return self::runFramework($files, $routeUri, $httpMethod);
+        }
+
+        return self::runNative($files, $entrypoint);
+    }
+
+    /**
+     * Mode 1: Eksekusi PHP Murni (Sandbox dengan Simulasi MySQL 8.0)
+     */
+    private static function runNative(array $files, string $entrypoint = 'index.php'): array
     {
         $startTime = microtime(true);
         $tempBaseDir = __DIR__ . '/../data/temp';
@@ -22,28 +36,23 @@ class Runner
             mkdir($tempBaseDir, 0777, true);
         }
 
-        // Buat folder eksekusi unik per run
-        $runId = uniqid('run_', true);
+        $runId = uniqid('run_native_', true);
         $runDir = $tempBaseDir . '/' . $runId;
         mkdir($runDir, 0777, true);
 
-        // Generate database connection helper bootstrap file
+        // Bootstrap simulasi MySQL
         $dbConfig = Database::getConfig();
-        $driver = $dbConfig['driver'] ?? 'mysql';
         $dbBootstrapCode = "<?php\n" . self::generateDbBootstrap($dbConfig);
         $bootstrapFile = $runDir . '/_bootstrap.php';
         file_put_contents($bootstrapFile, $dbBootstrapCode);
 
-        // Tulis semua file dan direktori pengguna ke folder eksekusi
+        // Tulis berkas pengguna
         foreach ($files as $filename => $content) {
-            // Normalisasi slashes dan hapus directory traversal '..'
             $normalized = str_replace('\\', '/', $filename);
             $parts = array_filter(explode('/', $normalized), fn($p) => $p !== '' && $p !== '.' && $p !== '..');
             $safeRelativePath = implode('/', $parts);
 
-            if (empty($safeRelativePath)) {
-                continue;
-            }
+            if (empty($safeRelativePath)) continue;
 
             if (!str_ends_with(strtolower($safeRelativePath), '.php')) {
                 $safeRelativePath .= '.php';
@@ -55,10 +64,7 @@ class Runner
                 mkdir($parentDir, 0777, true);
             }
 
-            // Transformasi kode MySQL pengguna ke simulasi SQLite
             $transformedContent = self::transformUserCodeForSimulation($content);
-
-            // Pastikan tag pembuka PHP ada jika pengguna menulis kode murni
             $trimmed = trim($transformedContent);
             if (!empty($trimmed) && !str_starts_with($trimmed, '<?php') && !str_starts_with($trimmed, '<?=') && !str_starts_with($trimmed, '<html') && !str_starts_with($trimmed, '<!')) {
                 $transformedContent = "<?php\n" . $transformedContent;
@@ -72,39 +78,30 @@ class Runner
             $safeEntrypoint = 'index.php';
         }
 
-        $phpBinary = PHP_BINARY;
-        if (!file_exists($phpBinary)) {
-            $phpBinary = 'php';
-        }
-
-        // Auto prepend _bootstrap.php agar simulasi MySQL dan variabel $koneksi, $conn, $pdo, $db selalu siap
+        $phpBinary = PHP_BINARY ?: 'php';
         $absBootstrap = realpath($bootstrapFile);
         $extArgs = "-d extension=pdo_sqlite -d extension=sqlite3 -d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
 
         $command = "\"{$phpBinary}\" {$extArgs} \"{$safeEntrypoint}\"";
 
         $descriptors = [
-            0 => ['pipe', 'r'], // STDIN
-            1 => ['pipe', 'w'], // STDOUT
-            2 => ['pipe', 'w']  // STDERR
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
         ];
 
-        // Jalankan proses dengan working directory di $runDir
         $process = proc_open($command, $descriptors, $pipes, $runDir);
-
         $stdout = '';
         $stderr = '';
         $exitCode = 0;
         $timedOut = false;
 
         if (is_resource($process)) {
-            fclose($pipes[0]); // Tutup stdin
-
-            // Non-blocking stream reads dengan timeout 5 detik
+            fclose($pipes[0]);
             stream_set_blocking($pipes[1], false);
             stream_set_blocking($pipes[2], false);
 
-            $procTimeout = 5.0; // detik
+            $procTimeout = 5.0;
             $procStart = microtime(true);
 
             while (true) {
@@ -117,24 +114,19 @@ class Runner
                 if ((microtime(true) - $procStart) > $procTimeout) {
                     $timedOut = true;
                     proc_terminate($process, 9);
-                    $stderr .= "\n[Batas Waktu Terlampaui]: Eksekusi program melebihi batas waktu maksimal (5 detik).";
+                    $stderr .= "\n[Batas Waktu Terlampaui]: Eksekusi melebihi batas maksimal (5 detik).";
                     break;
                 }
 
                 $read1 = stream_get_contents($pipes[1]);
-                if ($read1 !== false && $read1 !== '') {
-                    $stdout .= $read1;
-                }
+                if ($read1 !== false && $read1 !== '') $stdout .= $read1;
 
                 $read2 = stream_get_contents($pipes[2]);
-                if ($read2 !== false && $read2 !== '') {
-                    $stderr .= $read2;
-                }
+                if ($read2 !== false && $read2 !== '') $stderr .= $read2;
 
-                usleep(15000); // 15ms
+                usleep(15000);
             }
 
-            // Ambil sisa output
             $stdout .= stream_get_contents($pipes[1]);
             $stderr .= stream_get_contents($pipes[2]);
 
@@ -147,13 +139,6 @@ class Runner
         }
 
         $duration = round((microtime(true) - $startTime) * 1000, 2);
-
-        if (str_contains($stderr, 'Maximum execution time of') || str_contains($stdout, 'Maximum execution time of')) {
-            $timedOut = true;
-            $stderr .= "\n[Batas Waktu Terlampaui]: Eksekusi program melebihi batas waktu maksimal (5 detik).";
-        }
-
-        // Hapus folder eksekusi sementara
         self::deleteDirectory($runDir);
 
         return [
@@ -163,9 +148,193 @@ class Runner
             'exit_code' => $exitCode,
             'execution_time_ms' => $duration,
             'timed_out' => $timedOut,
+            'mode' => 'native',
             'driver' => 'mysql',
             'entrypoint' => $safeEntrypoint
         ];
+    }
+
+    /**
+     * Mode 2: Eksekusi Sakuci Framework MVC
+     */
+    private static function runFramework(array $files, string $routeUri = '/', string $httpMethod = 'GET'): array
+    {
+        $startTime = microtime(true);
+        $tempBaseDir = __DIR__ . '/../data/temp';
+        if (!is_dir($tempBaseDir)) {
+            mkdir($tempBaseDir, 0777, true);
+        }
+
+        $runId = uniqid('run_sakuci_', true);
+        $runDir = $tempBaseDir . '/' . $runId;
+        mkdir($runDir, 0777, true);
+
+        $frameworkSrc = __DIR__ . '/framework/sakuci';
+
+        // 1. Salin template dasar framework (core, config, default app & routes & views)
+        self::copyDirectory($frameworkSrc . '/core', $runDir . '/core');
+        self::copyDirectory($frameworkSrc . '/config', $runDir . '/config');
+        self::copyDirectory($frameworkSrc . '/app_default', $runDir . '/app');
+        self::copyDirectory($frameworkSrc . '/resources_default', $runDir . '/resources');
+        self::copyDirectory($frameworkSrc . '/routes_default', $runDir . '/routes');
+
+        mkdir($runDir . '/storage/views', 0777, true);
+        mkdir($runDir . '/storage/sessions', 0777, true);
+        mkdir($runDir . '/public', 0777, true);
+
+        // 2. Timpa dengan berkas yang diedit/dibuat pengguna di playground
+        foreach ($files as $filename => $content) {
+            $normalized = str_replace('\\', '/', $filename);
+            $parts = array_filter(explode('/', $normalized), fn($p) => $p !== '' && $p !== '.' && $p !== '..');
+            $safeRelativePath = implode('/', $parts);
+            if (empty($safeRelativePath)) continue;
+
+            $fullPath = $runDir . '/' . $safeRelativePath;
+            $parentDir = dirname($fullPath);
+            if (!is_dir($parentDir)) {
+                mkdir($parentDir, 0777, true);
+            }
+
+            file_put_contents($fullPath, $content);
+        }
+
+        // 3. Konfigurasi koneksi database ke latihan.sqlite
+        $sqlitePath = addslashes(str_replace('\\', '/', realpath(__DIR__ . '/../data/latihan.sqlite') ?: (__DIR__ . '/../data/latihan.sqlite')));
+
+        // Buat public/index.php jika belum ada
+        $indexFile = $runDir . '/public/index.php';
+        if (!file_exists($indexFile)) {
+            $indexContent = <<<PHP
+<?php
+define('SAKUCI_START', microtime(true));
+define('BASE_PATH', dirname(__DIR__));
+
+putenv('DB_CONNECTION=sqlite');
+putenv('DB_SQLITE_PATH={$sqlitePath}');
+
+require BASE_PATH . '/core/bootstrap.php';
+
+(new Sakuci\Application(BASE_PATH))->run();
+PHP;
+            file_put_contents($indexFile, $indexContent);
+        }
+
+        // 4. Siapkan bootstrap simulation environment
+        $safeRoute = '/' . ltrim(parse_url($routeUri, PHP_URL_PATH) ?: '/', '/');
+        $queryStr = parse_url($routeUri, PHP_URL_QUERY) ?: '';
+        $safeMethod = strtoupper($httpMethod ?: 'GET');
+
+        $bootstrapFile = $runDir . '/_bootstrap_env.php';
+        $escapedRunDir = addslashes(str_replace('\\', '/', $runDir));
+        $bootstrapCode = <<<PHP
+<?php
+\$_SERVER['REQUEST_URI'] = '{$safeRoute}' . ('{$queryStr}' !== '' ? '?' . '{$queryStr}' : '');
+\$_SERVER['REQUEST_METHOD'] = '{$safeMethod}';
+\$_SERVER['SCRIPT_NAME'] = '/index.php';
+\$_SERVER['SERVER_NAME'] = 'localhost';
+\$_SERVER['SERVER_PORT'] = '8000';
+\$_SERVER['HTTP_HOST'] = 'localhost:8000';
+\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+\$_SERVER['DOCUMENT_ROOT'] = '{$escapedRunDir}/public';
+
+putenv('DB_CONNECTION=sqlite');
+putenv('DB_SQLITE_PATH={$sqlitePath}');
+PHP;
+        file_put_contents($bootstrapFile, $bootstrapCode);
+
+        // 5. Eksekusi proses
+        $phpBinary = PHP_BINARY ?: 'php';
+        $absBootstrap = realpath($bootstrapFile);
+        $extArgs = "-d extension=pdo_sqlite -d extension=sqlite3 -d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
+
+        $command = "\"{$phpBinary}\" {$extArgs} \"public/index.php\"";
+
+        $descriptors = [
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w']
+        ];
+
+        $process = proc_open($command, $descriptors, $pipes, $runDir);
+        $stdout = '';
+        $stderr = '';
+        $exitCode = 0;
+        $timedOut = false;
+
+        if (is_resource($process)) {
+            fclose($pipes[0]);
+            stream_set_blocking($pipes[1], false);
+            stream_set_blocking($pipes[2], false);
+
+            $procTimeout = 5.0;
+            $procStart = microtime(true);
+
+            while (true) {
+                $status = proc_get_status($process);
+                if (!$status['running']) {
+                    $exitCode = $status['exitcode'];
+                    break;
+                }
+
+                if ((microtime(true) - $procStart) > $procTimeout) {
+                    $timedOut = true;
+                    proc_terminate($process, 9);
+                    $stderr .= "\n[Timeout]: Eksekusi melebihi batas 5 detik.";
+                    break;
+                }
+
+                $r1 = stream_get_contents($pipes[1]);
+                if ($r1 !== false && $r1 !== '') $stdout .= $r1;
+                $r2 = stream_get_contents($pipes[2]);
+                if ($r2 !== false && $r2 !== '') $stderr .= $r2;
+
+                usleep(15000);
+            }
+
+            $stdout .= stream_get_contents($pipes[1]);
+            $stderr .= stream_get_contents($pipes[2]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            proc_close($process);
+        } else {
+            $stderr = "Gagal menjalankan Sakuci Framework.";
+            $exitCode = 1;
+        }
+
+        $duration = round((microtime(true) - $startTime) * 1000, 2);
+        self::deleteDirectory($runDir);
+
+        return [
+            'success' => ($exitCode === 0 && !$timedOut),
+            'stdout' => $stdout,
+            'stderr' => $stderr,
+            'exit_code' => $exitCode,
+            'execution_time_ms' => $duration,
+            'timed_out' => $timedOut,
+            'mode' => 'framework',
+            'route' => $safeRoute
+        ];
+    }
+
+    public static function copyDirectory(string $src, string $dst): void
+    {
+        if (!is_dir($src)) return;
+        @mkdir($dst, 0777, true);
+        $dir = opendir($src);
+        if (!$dir) return;
+
+        while (($file = readdir($dir)) !== false) {
+            if ($file !== '.' && $file !== '..') {
+                $srcPath = $src . '/' . $file;
+                $dstPath = $dst . '/' . $file;
+                if (is_dir($srcPath)) {
+                    self::copyDirectory($srcPath, $dstPath);
+                } else {
+                    copy($srcPath, $dstPath);
+                }
+            }
+        }
+        closedir($dir);
     }
 
     private static function deleteDirectory(string $dir): void
@@ -184,9 +353,6 @@ class Runner
         @rmdir($dir);
     }
 
-    /**
-     * Transformasi pemanggilan koneksi MySQL menjadi pemanggilan simulasi SQLite
-     */
     private static function transformUserCodeForSimulation(string $code): string
     {
         // 1. new PDO("mysql:host=...;dbname=...", ...) -> new PDO("sqlite:" . DB_PATH, ...)
@@ -320,7 +486,6 @@ class SakuciMySQLi {
             \$this->error = '';
             \$this->errno = 0;
 
-            // Normalisasi sintaks MySQL ke SQLite
             \$normSql = preg_replace('/\\bINT(EGER)?\\s+(AUTO_INCREMENT\\s+PRIMARY\\s+KEY|PRIMARY\\s+KEY\\s+AUTO_INCREMENT)\\b/i', 'INTEGER PRIMARY KEY AUTOINCREMENT', \$sql);
             \$normSql = preg_replace('/\\bAUTO_INCREMENT\\b/i', 'AUTOINCREMENT', \$normSql);
             \$normSql = preg_replace('/\\bINT\\s+PRIMARY\\s+KEY\\b/i', 'INTEGER PRIMARY KEY', \$normSql);

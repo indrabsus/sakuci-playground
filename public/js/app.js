@@ -1,19 +1,192 @@
 /**
  * Sakuci PHP & MySQL Ground - Core Application Controller
- * Mendukung File & Folder Explorer Sidebar, Multi-File Bertingkat, dan Mobile Responsive.
- * Simulasi MySQL 8.0 Zero-Config (Host: localhost, User: root, Pass: '', Database: latihan).
+ * Mendukung Mode Ganda:
+ * 1. Mode PHP Murni (Kanvas bersih, single/multi file, MySQL 8.0 Simulation)
+ * 2. Mode Sakuci Framework (https://github.com/indrabsus/sakuci-framework.git)
  */
 
-const DEFAULT_INDEX_CODE = "";
+const DEFAULT_NATIVE_FILES = {
+    'index.php': ''
+};
+const DEFAULT_NATIVE_FOLDERS = [];
+
+const DEFAULT_FRAMEWORK_FILES = {
+    'routes/web.php': `<?php
+
+use Sakuci\\Route;
+use App\\Controllers\\HomeController;
+
+/*
+|--------------------------------------------------------------------------
+| Web Routes - Sakuci Framework
+|--------------------------------------------------------------------------
+| Daftarkan route aplikasi Anda di sini.
+*/
+
+Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/halo', function () {
+    return '<h1>Halo dari Sakuci Framework! 🚀</h1><p>Route closure bekerja dengan sempurna.</p>';
+});
+
+Route::get('/mahasiswa', [HomeController::class, 'mahasiswa'])->name('mahasiswa');
+`,
+    'app/Controllers/HomeController.php': `<?php
+
+namespace App\\Controllers;
+
+use Sakuci\\Controller;
+use App\\Models\\Mahasiswa;
+
+class HomeController extends Controller
+{
+    public function index()
+    {
+        return view('welcome', [
+            'appName' => 'Sakuci Framework Playground',
+            'version' => '1.0.0'
+        ]);
+    }
+
+    public function mahasiswa()
+    {
+        // Mengambil data dari database simulasi latihan via Sakuci Model
+        $daftarMahasiswa = Mahasiswa::all();
+
+        return view('mahasiswa', [
+            'mahasiswa' => $daftarMahasiswa
+        ]);
+    }
+}
+`,
+    'app/Models/Mahasiswa.php': `<?php
+
+namespace App\\Models;
+
+use Sakuci\\Database\\Model;
+
+class Mahasiswa extends Model
+{
+    protected static ?string $table = 'mahasiswa';
+    public bool $timestamps = false;
+}
+`,
+    'resources/views/welcome.sakuci.php': `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ \$appName }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-xl w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-sky-500/20 text-sky-400 text-3xl rounded-2xl mb-4">
+            ⚡
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">
+            Selamat Datang di <span class="text-sky-400">Sakuci Framework</span>
+        </h1>
+        <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+            Kerangka kerja PHP ringan bergaya Laravel tanpa Composer & dependensi eksternal.
+            Mendukung Route, Controller, Model (ORM), dan View (.sakuci.php).
+        </p>
+        
+        <div class="grid grid-cols-2 gap-3 mb-6 text-left">
+            <button onclick="parent.App.visitRoute('/halo')" class="p-3.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 rounded-xl transition text-left cursor-pointer">
+                <div class="text-xs font-semibold text-sky-400 mb-1">Route Sederhana →</div>
+                <div class="text-[11px] text-slate-400">Uji rute <code>/halo</code></div>
+            </button>
+            <button onclick="parent.App.visitRoute('/mahasiswa')" class="p-3.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 rounded-xl transition text-left cursor-pointer">
+                <div class="text-xs font-semibold text-emerald-400 mb-1">Database Model →</div>
+                <div class="text-[11px] text-slate-400">Uji rute <code>/mahasiswa</code></div>
+            </button>
+        </div>
+
+        <div class="text-[11px] text-slate-500 font-mono">
+            Edit berkas di <code class="text-sky-300">routes/web.php</code>, <code class="text-sky-300">app/Controllers/</code>, & <code class="text-sky-300">resources/views/</code>
+        </div>
+    </div>
+</body>
+</html>
+`,
+    'resources/views/mahasiswa.sakuci.php': `<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Mahasiswa - Sakuci Framework</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 p-6 min-h-screen">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
+            <div>
+                <button onclick="parent.App.visitRoute('/')" class="text-xs text-sky-400 hover:underline mb-1 inline-block cursor-pointer">← Kembali ke Beranda</button>
+                <h1 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span>🎓</span> Daftar Mahasiswa (Sakuci Model ORM)
+                </h1>
+            </div>
+            <span class="px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-full text-xs font-mono">
+                Model: Mahasiswa::all()
+            </span>
+        </div>
+
+        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-900/80 text-slate-400 uppercase font-mono border-b border-slate-700">
+                    <tr>
+                        <th class="p-3">ID</th>
+                        <th class="p-3">NIM</th>
+                        <th class="p-3">Nama</th>
+                        <th class="p-3">Jurusan</th>
+                        <th class="p-3">IPK</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-700/60 font-mono">
+                    @foreach ($mahasiswa as $mhs)
+                    <tr class="hover:bg-slate-700/30 transition">
+                        <td class="p-3 text-slate-400">{{ $mhs->id }}</td>
+                        <td class="p-3 font-semibold text-sky-400">{{ $mhs->nim }}</td>
+                        <td class="p-3 text-slate-200">{{ $mhs->nama }}</td>
+                        <td class="p-3 text-slate-300">{{ $mhs->jurusan }}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[11px]">
+                                {{ $mhs->ipk }}
+                            </span>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+`
+};
+
+const DEFAULT_FRAMEWORK_FOLDERS = [
+    'routes',
+    'app',
+    'app/Controllers',
+    'app/Models',
+    'resources',
+    'resources/views'
+];
 
 window.App = {
+    // Mode Playground: 'native' | 'framework'
+    playgroundMode: 'native',
+    frameworkRoute: '/',
+
     // State Berkas & Folder
     files: {},
     folders: [],
-    openTabs: ['index.php'],
-    activeFile: 'index.php',
+    openTabs: [],
+    activeFile: '',
     expandedFolders: {},
-    targetFolderForCreate: '', // Folder konteks saat membuat file/folder baru
+    targetFolderForCreate: '',
     isSidebarOpen: true,
 
     // State Tampilan
@@ -23,6 +196,7 @@ window.App = {
     theme: 'dark',
 
     init: function () {
+        this.playgroundMode = localStorage.getItem('sakuci_playground_mode') || 'native';
         this.loadFilesFromStorage();
         this.setupSplitPane();
         this.setupTabs();
@@ -31,16 +205,18 @@ window.App = {
         this.setupDbModal();
         this.setupExplorerModals();
         this.setupSidebarToggle();
+        this.setupFrameworkRouteBar();
 
-        // Inisialisasi Monaco Editor dengan kode kosong default
-        CodeEditor.init('monaco-editor-container', this.files[this.activeFile] ?? DEFAULT_INDEX_CODE, () => {
+        // Inisialisasi Monaco Editor
+        CodeEditor.init('monaco-editor-container', this.files[this.activeFile] ?? '', () => {
             this.runCode();
         });
 
         // Inisialisasi Database Manager
         DbManager.init();
 
-        // Render Sidebar Pohon Berkas & Bilah Tab
+        // Render UI
+        this.updateModeUI();
         this.renderExplorer();
         this.renderOpenTabs();
 
@@ -50,14 +226,12 @@ window.App = {
             runBtn.addEventListener('click', () => this.runCode());
         }
 
-        // Reset Code Button (Mengosongkan file)
+        // Reset Code Button
         const resetBtn = document.getElementById('btn-reset-code');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
-                if (confirm(`Kosongkan isi file "${this.activeFile}"?`)) {
-                    this.files[this.activeFile] = "";
-                    CodeEditor.setCode("");
-                    this.saveFilesToStorage();
+                if (confirm(`Kembalikan seluruh berkas mode ${this.playgroundMode === 'framework' ? 'Sakuci Framework' : 'PHP Murni'} ke kondisi awal?`)) {
+                    this.resetCurrentMode();
                 }
             });
         }
@@ -103,52 +277,179 @@ window.App = {
     },
 
     // ==========================================
-    // PENYIMPANAN LOCALSTORAGE
+    // DUAL MODE SWITCHER (NATIVE VS FRAMEWORK)
+    // ==========================================
+    switchMode: function (mode) {
+        if (this.playgroundMode === mode) return;
+
+        // Simpan file mode saat ini
+        this.saveFilesToStorage();
+
+        // Beralih mode
+        this.playgroundMode = mode;
+        localStorage.setItem('sakuci_playground_mode', mode);
+
+        // Muat file mode yang dipilih
+        this.loadFilesFromStorage();
+
+        this.updateModeUI();
+        this.renderExplorer();
+        this.renderOpenTabs();
+
+        CodeEditor.setCode(this.files[this.activeFile] ?? '');
+
+        // Jika pindah ke framework, otomatis buka tab HTML preview & jalankan
+        if (mode === 'framework') {
+            if (window.innerWidth >= 768) {
+                this.switchTab('html');
+            }
+            this.runCode();
+        } else {
+            if (window.innerWidth >= 768) {
+                this.switchTab('console');
+            }
+        }
+    },
+
+    updateModeUI: function () {
+        const btnNative = document.getElementById('btn-mode-native');
+        const btnFramework = document.getElementById('btn-mode-framework');
+        const routeBar = document.getElementById('framework-route-bar');
+        const modeBadge = document.getElementById('app-mode-badge');
+
+        if (this.playgroundMode === 'framework') {
+            if (btnFramework) {
+                btnFramework.className = 'px-2.5 py-1 rounded-md transition flex items-center gap-1.5 bg-sky-600 text-white shadow font-semibold';
+            }
+            if (btnNative) {
+                btnNative.className = 'px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200';
+            }
+            if (routeBar) {
+                routeBar.classList.remove('hidden');
+            }
+            if (modeBadge) {
+                modeBadge.textContent = 'Sakuci MVC';
+                modeBadge.className = 'hidden sm:inline-block text-[10px] px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono font-normal';
+            }
+        } else {
+            if (btnNative) {
+                btnNative.className = 'px-2.5 py-1 rounded-md transition flex items-center gap-1.5 bg-[#21262d] text-white shadow font-semibold';
+            }
+            if (btnFramework) {
+                btnFramework.className = 'px-2.5 py-1 rounded-md transition flex items-center gap-1.5 text-gray-400 hover:text-gray-200';
+            }
+            if (routeBar) {
+                routeBar.classList.add('hidden');
+            }
+            if (modeBadge) {
+                modeBadge.textContent = 'PHP 8.3 Murni';
+                modeBadge.className = 'hidden sm:inline-block text-[10px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-mono font-normal';
+            }
+        }
+    },
+
+    setupFrameworkRouteBar: function () {
+        const inputRoute = document.getElementById('framework-route-input');
+        const btnVisit = document.getElementById('btn-visit-route');
+
+        if (btnVisit) {
+            btnVisit.addEventListener('click', () => {
+                if (inputRoute) {
+                    this.visitRoute(inputRoute.value.trim() || '/');
+                }
+            });
+        }
+
+        if (inputRoute) {
+            inputRoute.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.visitRoute(inputRoute.value.trim() || '/');
+                }
+            });
+        }
+    },
+
+    visitRoute: function (route) {
+        let cleanRoute = route.trim();
+        if (!cleanRoute.startsWith('/')) {
+            cleanRoute = '/' + cleanRoute;
+        }
+        this.frameworkRoute = cleanRoute;
+        const inputRoute = document.getElementById('framework-route-input');
+        if (inputRoute) {
+            inputRoute.value = cleanRoute;
+        }
+
+        // Pindah ke tab HTML
+        if (window.innerWidth < 768) {
+            this.setMobileView('html');
+        } else {
+            this.switchTab('html');
+        }
+
+        this.runCode();
+    },
+
+    resetCurrentMode: function () {
+        if (this.playgroundMode === 'framework') {
+            this.files = JSON.parse(JSON.stringify(DEFAULT_FRAMEWORK_FILES));
+            this.folders = [...DEFAULT_FRAMEWORK_FOLDERS];
+            this.openTabs = ['routes/web.php', 'app/Controllers/HomeController.php', 'resources/views/welcome.sakuci.php'];
+            this.activeFile = 'routes/web.php';
+        } else {
+            this.files = JSON.parse(JSON.stringify(DEFAULT_NATIVE_FILES));
+            this.folders = [...DEFAULT_NATIVE_FOLDERS];
+            this.openTabs = ['index.php'];
+            this.activeFile = 'index.php';
+        }
+        this.saveFilesToStorage();
+        this.renderExplorer();
+        this.renderOpenTabs();
+        CodeEditor.setCode(this.files[this.activeFile] ?? '');
+    },
+
+    // ==========================================
+    // PENYIMPANAN LOCALSTORAGE PER MODE
     // ==========================================
     loadFilesFromStorage: function () {
+        const prefix = this.playgroundMode === 'framework' ? 'sakuci_framework_' : 'sakuci_native_';
         try {
-            const savedFiles = localStorage.getItem('sakuci_php_files_v4');
-            const savedFolders = localStorage.getItem('sakuci_php_folders_v4');
-            const savedTabs = localStorage.getItem('sakuci_open_tabs_v4');
-            const savedActive = localStorage.getItem('sakuci_active_file_v4');
+            const savedFiles = localStorage.getItem(prefix + 'files');
+            const savedFolders = localStorage.getItem(prefix + 'folders');
+            const savedTabs = localStorage.getItem(prefix + 'open_tabs');
+            const savedActive = localStorage.getItem(prefix + 'active_file');
 
             if (savedFiles) {
                 const parsed = JSON.parse(savedFiles);
-                if (parsed && typeof parsed === 'object') {
-                    if (parsed['index.php'] === undefined) {
-                        parsed['index.php'] = DEFAULT_INDEX_CODE;
-                    }
+                if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
                     this.files = parsed;
-
-                    if (savedFolders) {
-                        this.folders = JSON.parse(savedFolders) || [];
-                    }
-
-                    if (savedTabs) {
-                        this.openTabs = JSON.parse(savedTabs) || ['index.php'];
-                        if (!this.openTabs.includes('index.php')) {
-                            this.openTabs.unshift('index.php');
-                        }
-                    } else {
-                        this.openTabs = Object.keys(this.files);
-                    }
-
-                    this.activeFile = (savedActive && this.files[savedActive] !== undefined) ? savedActive : 'index.php';
+                    this.folders = savedFolders ? JSON.parse(savedFolders) : [];
+                    this.openTabs = savedTabs ? JSON.parse(savedTabs) : Object.keys(this.files);
+                    this.activeFile = (savedActive && this.files[savedActive] !== undefined) 
+                        ? savedActive 
+                        : Object.keys(this.files)[0];
                     return;
                 }
             }
         } catch (e) {}
 
-        // Inisialisasi awal: HANYA index.php dalam keadaan kosong!
-        this.files = {
-            'index.php': DEFAULT_INDEX_CODE
-        };
-        this.folders = [];
-        this.openTabs = ['index.php'];
-        this.activeFile = 'index.php';
+        // Inisialisasi awal jika belum ada
+        if (this.playgroundMode === 'framework') {
+            this.files = JSON.parse(JSON.stringify(DEFAULT_FRAMEWORK_FILES));
+            this.folders = [...DEFAULT_FRAMEWORK_FOLDERS];
+            this.openTabs = ['routes/web.php', 'app/Controllers/HomeController.php', 'resources/views/welcome.sakuci.php'];
+            this.activeFile = 'routes/web.php';
+        } else {
+            this.files = JSON.parse(JSON.stringify(DEFAULT_NATIVE_FILES));
+            this.folders = [...DEFAULT_NATIVE_FOLDERS];
+            this.openTabs = ['index.php'];
+            this.activeFile = 'index.php';
+        }
     },
 
     saveFilesToStorage: function () {
+        const prefix = this.playgroundMode === 'framework' ? 'sakuci_framework_' : 'sakuci_native_';
         try {
             if (this.activeFile && this.files[this.activeFile] !== undefined) {
                 const currentCode = CodeEditor.getCode();
@@ -156,10 +457,10 @@ window.App = {
                     this.files[this.activeFile] = currentCode;
                 }
             }
-            localStorage.setItem('sakuci_php_files_v4', JSON.stringify(this.files));
-            localStorage.setItem('sakuci_php_folders_v4', JSON.stringify(this.folders));
-            localStorage.setItem('sakuci_open_tabs_v4', JSON.stringify(this.openTabs));
-            localStorage.setItem('sakuci_active_file_v4', this.activeFile);
+            localStorage.setItem(prefix + 'files', JSON.stringify(this.files));
+            localStorage.setItem(prefix + 'folders', JSON.stringify(this.folders));
+            localStorage.setItem(prefix + 'open_tabs', JSON.stringify(this.openTabs));
+            localStorage.setItem(prefix + 'active_file', this.activeFile);
         } catch (e) {}
     },
 
@@ -300,7 +601,7 @@ window.App = {
                 `;
             } else {
                 const isActive = item.path === this.activeFile;
-                const isIndex = item.path === 'index.php';
+                const isIndex = item.path === 'index.php' || item.path === 'routes/web.php';
                 return `
                     <div class="tree-item flex items-center justify-between py-1 px-1.5 rounded text-xs group cursor-pointer ${
                         isActive ? 'active font-semibold' : 'text-gray-400 hover:text-gray-200'
@@ -339,7 +640,7 @@ window.App = {
 
         container.innerHTML = this.openTabs.map(path => {
             const isActive = path === this.activeFile;
-            const isIndex = path === 'index.php';
+            const isEssential = path === 'index.php' || path === 'routes/web.php';
             const displayName = path.split('/').pop();
 
             return `
@@ -350,10 +651,10 @@ window.App = {
                 }">
                     <button type="button" onclick="App.openFile('${path}')" 
                         class="px-2.5 py-1.5 flex items-center gap-1.5 focus:outline-none select-none">
-                        <span class="text-xs">${isIndex ? '⭐' : '📄'}</span>
+                        <span class="text-xs">${isEssential ? '⭐' : '📄'}</span>
                         <span title="${path}">${displayName}</span>
                     </button>
-                    ${!isIndex ? `
+                    ${!isEssential ? `
                         <button type="button" onclick="App.closeTab(event, '${path}')" title="Tutup tab" 
                             class="p-1 text-gray-500 hover:text-red-400 hover:bg-[#30363d] rounded transition mr-1 flex items-center justify-center focus:outline-none">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -384,7 +685,6 @@ window.App = {
         this.renderOpenTabs();
         this.saveFilesToStorage();
 
-        // Di layar ponsel, otomatis langsung beralih ke editor layar penuh
         if (window.innerWidth < 768) {
             this.setMobileView('editor');
         }
@@ -396,12 +696,13 @@ window.App = {
             e.stopPropagation();
         }
 
-        if (path === 'index.php') return;
+        const isEssential = path === 'index.php' || path === 'routes/web.php';
+        if (isEssential) return;
 
         this.openTabs = this.openTabs.filter(p => p !== path);
 
         if (this.activeFile === path) {
-            const nextTab = this.openTabs[this.openTabs.length - 1] || 'index.php';
+            const nextTab = this.openTabs[this.openTabs.length - 1] || Object.keys(this.files)[0];
             this.openFile(nextTab);
         } else {
             this.renderOpenTabs();
@@ -558,8 +859,9 @@ window.App = {
     },
 
     deleteFile: function (path) {
-        if (path === 'index.php') {
-            alert('File index.php adalah file utama dan tidak dapat dihapus.');
+        const isEssential = path === 'index.php' || path === 'routes/web.php';
+        if (isEssential) {
+            alert(`File "${path}" adalah file utama dan tidak dapat dihapus.`);
             return;
         }
 
@@ -571,7 +873,7 @@ window.App = {
         this.openTabs = this.openTabs.filter(p => p !== path);
 
         if (this.activeFile === path) {
-            const nextTab = this.openTabs[this.openTabs.length - 1] || 'index.php';
+            const nextTab = this.openTabs[this.openTabs.length - 1] || Object.keys(this.files)[0];
             this.openFile(nextTab);
         } else {
             this.renderExplorer();
@@ -597,7 +899,7 @@ window.App = {
         });
 
         if (wasActiveDeleted) {
-            const nextTab = this.openTabs[this.openTabs.length - 1] || 'index.php';
+            const nextTab = this.openTabs[this.openTabs.length - 1] || Object.keys(this.files)[0];
             this.openFile(nextTab);
         } else {
             this.renderExplorer();
@@ -695,7 +997,7 @@ window.App = {
     },
 
     // ==========================================
-    // EXECUTE MULTI-FILE CODE
+    // EXECUTE CODE (NATIVE OR FRAMEWORK)
     // ==========================================
     runCode: async function () {
         if (this.isRunning) return;
@@ -726,13 +1028,19 @@ window.App = {
         }
 
         if (window.innerWidth < 768) {
-            this.setMobileView('console');
-        } else if (this.activeTab !== 'html') {
-            this.switchTab('console');
+            if (this.playgroundMode === 'framework') {
+                this.setMobileView('html');
+            } else {
+                this.setMobileView('console');
+            }
+        } else {
+            if (this.playgroundMode === 'framework' && this.activeTab !== 'console') {
+                this.switchTab('html');
+            }
         }
 
         if (consoleEl) {
-            consoleEl.innerHTML = '<div class="text-xs text-sky-400 p-4 font-mono animate-pulse">⚡ Menjalankan skrip PHP & MySQL...</div>';
+            consoleEl.innerHTML = `<div class="text-xs text-sky-400 p-4 font-mono animate-pulse">⚡ Menjalankan mode ${this.playgroundMode === 'framework' ? 'Sakuci Framework (' + this.frameworkRoute + ')' : 'PHP Murni'}...</div>`;
         }
 
         try {
@@ -740,8 +1048,11 @@ window.App = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    mode: this.playgroundMode,
+                    route_uri: this.frameworkRoute,
+                    http_method: 'GET',
                     files: this.files,
-                    entrypoint: 'index.php'
+                    entrypoint: this.playgroundMode === 'framework' ? 'public/index.php' : 'index.php'
                 })
             });
 
@@ -804,6 +1115,15 @@ window.App = {
         }
 
         if (result.stdout) {
+            // Jika stdout adalah HTML panjang, tampilkan ringkasan di konsol dan arahkan ke tab HTML
+            const isLongHtml = result.stdout.includes('<html') || result.stdout.includes('<!doctype') || result.stdout.length > 500;
+            if (this.playgroundMode === 'framework' && isLongHtml) {
+                outputHtml += `
+                    <div class="p-3 bg-sky-950/40 border border-sky-800/80 rounded text-sky-300 text-xs font-mono mb-3">
+                        ✓ Rute <code>${this.frameworkRoute}</code> berhasil diproses! Hasil tampilan visual HTML telah dirender di tab <strong>HTML</strong>.
+                    </div>
+                `;
+            }
             outputHtml += `
                 <div class="text-xs text-gray-200 font-mono whitespace-pre-wrap leading-relaxed select-text">
                     ${this.escapeHtml(result.stdout)}
@@ -824,26 +1144,7 @@ window.App = {
 
         const doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
-        doc.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                    body {
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                        padding: 16px;
-                        color: #1e293b;
-                        background: #ffffff;
-                    }
-                </style>
-            </head>
-            <body>
-                ${rawHtml || '<p style="color: #94a3b8; font-style: italic;">Tidak ada konten HTML untuk ditampilkan.</p>'}
-            </body>
-            </html>
-        `);
+        doc.write(rawHtml || '<p style="color: #94a3b8; font-style: italic; padding: 16px; font-family: sans-serif;">Tidak ada konten HTML untuk ditampilkan.</p>');
         doc.close();
     },
 

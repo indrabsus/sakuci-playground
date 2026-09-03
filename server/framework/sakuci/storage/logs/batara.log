@@ -1,0 +1,7 @@
+[2026-09-03 18:38:32] RuntimeException: Middleware [App\Middleware\VerifyCsrfToken] tidak ditemukan. di C:\Gravity Project\sakuci-php-ground\server\framework\sakuci\core\Routing\Router.php:264
+#0 C:\Gravity Project\sakuci-php-ground\server\framework\sakuci\core\Routing\Router.php(271): Sakuci\Routing\Router->Sakuci\Routing\{closure}(Object(Sakuci\Http\Request))
+#1 C:\Gravity Project\sakuci-php-ground\server\framework\sakuci\core\Routing\Router.php(222): Sakuci\Routing\Router->runThroughMiddleware(Object(Sakuci\Http\Request), Object(Sakuci\Routing\RouteDefinition), Object(Closure))
+#2 C:\Gravity Project\sakuci-php-ground\server\framework\sakuci\core\Application.php(64): Sakuci\Routing\Router->dispatch(Object(Sakuci\Http\Request))
+#3 C:\Gravity Project\sakuci-php-ground\server\test_framework.php(25): Sakuci\Application->run()
+#4 {main}
+

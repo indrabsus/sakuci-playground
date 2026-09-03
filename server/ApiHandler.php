@@ -25,14 +25,12 @@ class ApiHandler
                     if ($method !== 'POST') {
                         self::error('Method not allowed', 405);
                     }
-                    if (isset($input['files']) && is_array($input['files'])) {
-                        $files = $input['files'];
-                        $entrypoint = $input['entrypoint'] ?? 'index.php';
-                        $result = Runner::run($files, $entrypoint);
-                    } else {
-                        $code = $input['code'] ?? '';
-                        $result = Runner::run($code);
-                    }
+                    $files = (isset($input['files']) && is_array($input['files'])) ? $input['files'] : ['index.php' => $input['code'] ?? ''];
+                    $entrypoint = $input['entrypoint'] ?? 'index.php';
+                    $mode = $input['mode'] ?? 'native';
+                    $routeUri = $input['route_uri'] ?? '/';
+                    $httpMethod = $input['http_method'] ?? 'GET';
+                    $result = Runner::run($files, $entrypoint, $mode, $routeUri, $httpMethod);
                     echo json_encode($result);
                     break;
 

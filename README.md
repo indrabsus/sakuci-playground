@@ -2,21 +2,27 @@
 
 **Sakuci PHP & MySQL Ground** adalah aplikasi playground berbasis web interaktif yang dirancang khusus untuk pembelajaran pemrograman PHP dan basis data MySQL secara praktis, cepat, dan responsif langsung dari peramban (browser).
 
-Dilengkapi dengan code editor profesional (Monaco Editor - mesin yang sama dengan VS Code), penjelajah berkas & direktori bertingkat (*File Explorer Sidebar*), mesin simulasi MySQL 8.0 zero-config, penjelajah database visual, serta konsol SQL interaktif.
+Kini dilengkapi dengan **Mode Ganda**:
+1. 🐘 **Mode PHP Murni (Native)**: Kanvas bersih, default `index.php` kosong, cocok untuk belajar dasar PHP prosedural, OOP, dan koneksi langsung MySQL.
+2. ⚡ **Mode Sakuci Framework ([indrabsus/sakuci-framework](https://github.com/indrabsus/sakuci-framework.git))**: Kerangka kerja PHP ringan bergaya Laravel tanpa Composer. Mendukung Route (`routes/web.php`), Controller, Model ORM, dan View Blade-like (`.sakuci.php`), lengkap dengan bilah URL address bar simulator.
 
 ---
 
 ## ✨ Fitur Utama
 
-1. **📁 Penjelajah File & Folder (Gaya VS Code)**:
+1. **🔀 Mode Ganda Playground (PHP Murni vs Sakuci Framework)**:
+   - Pengalih mode instan di header atas: `[ 🐘 PHP Murni ]` dan `[ ⚡ Sakuci Framework ]`.
+   - **Isolasi Workspace**: Berkas dan perubahan pada masing-masing mode tersimpan rapi secara independen di `localStorage` peramban. Berpindah mode tidak akan menimpa file Anda.
+   - **Bilah Alamat URL Simulator**: Pada mode Sakuci Framework, Anda dapat menguji berbagai endpoint rute (misal: `/`, `/halo`, `/mahasiswa`) secara interaktif.
+
+2. **📁 Penjelajah File & Folder (Gaya VS Code)**:
    - Sidebar penjelajah berkas di sisi kiri editor yang mendukung pembuatan file PHP dan folder bertingkat (`models`, `config`, `classes`, dll).
    - Eksekusi modular di backend: `require_once __DIR__ . '/models/User.php';` berjalan mulus.
    - Bilah tab editor atas dengan tombol tutup `✕` dan indikator file aktif.
-   - Default bersih: Hanya `index.php` (dalam keadaan kosong), memberikan kebebasan penuh bagi pengguna untuk menulis kode dari nol.
 
-2. **🗄️ Mesin Simulasi MySQL 8.0 (Zero-Config)**:
-   - Pembelajaran MySQL tanpa perlu instalasi atau setup server MySQL di PC.
-   - Menggunakan kredensial standar pembelajaran:
+3. **🗄️ Mesin Simulasi MySQL 8.0 (Zero-Config)**:
+   - Pembelajaran MySQL tanpa perlu instalasi atau menyalakan service MySQL di PC.
+   - Kredensial standar pembelajaran:
      - **Host**: `localhost` (127.0.0.1)
      - **Port**: `3306`
      - **User**: `root`
@@ -26,19 +32,19 @@ Dilengkapi dengan code editor profesional (Monaco Editor - mesin yang sama denga
      - **MySQLi Prosedural**: `mysqli_connect()`, `mysqli_query()`, `mysqli_fetch_assoc()`, `mysqli_fetch_array()`, dll.
      - **MySQLi OOP**: `new mysqli()`, `$conn->query()`, `$result->fetch_assoc()`, dll.
      - **PDO MySQL**: `new PDO("mysql:host=localhost;dbname=latihan", "root", "")`.
-     - Variabel global `$koneksi`, `$conn`, `$pdo`, dan `$db` langsung siap pakai.
+     - **Sakuci Model (ORM)**: `Mahasiswa::all()`, `Model::where()`, dll.
    - Penjelajah tabel visual dan konsol SQL langsung untuk `SELECT`, `INSERT`, `UPDATE`, `CREATE TABLE`, dll.
-   - Tombol **"Seed Data"**: Sekali klik untuk membuat tabel sampel `mahasiswa`, `kategori`, `produk`, dan `transaksi`.
+   - Tombol **"Seed Data"**: Sekali klik untuk mengisi ulang tabel `mahasiswa`, `kategori`, `produk`, dan `transaksi`.
 
-3. **📱 Tampilan Responsif & Mobile-Friendly**:
+4. **📱 Tampilan Responsif & Mobile-Friendly**:
    - Khusus layar ponsel/smartphone, navigasi dioptimalkan menjadi bilah tab bawah (*Bottom Navigation Bar*):
-     - **[📁 Berkas]**: Tampilan penjelajah file & folder layar penuh.
+     - **[📁 Berkas]**: Penjelajah file & folder layar penuh.
      - **[📝 Editor]**: Monaco Editor layar penuh (100% lebar layar).
      - **[💻 Konsol]**: Output terminal standar (`stdout` & `stderr`).
-     - **[🌐 HTML]**: Render live preview HTML hasil `echo`.
+     - **[🌐 HTML]**: Render live preview HTML hasil rute/view MVC.
      - **[🗄️ Database]**: Manajemen tabel dan query SQL interaktif.
 
-4. **⚡ Eksekutor PHP Terisolasi (Sandbox)**:
+5. **⚡ Eksekutor PHP Terisolasi (Sandbox)**:
    - Menjalankan kode PHP 8.3 dengan proteksi timeout (5 detik) untuk mencegah infinite loop.
    - Pengukuran performa: Waktu eksekusi (milidetik) dan exit code.
 
@@ -74,14 +80,16 @@ sakuci-php-ground/
 │   ├── css/
 │   │   └── style.css        # Custom styles & tata letak responsif
 │   ├── js/
-│   │   ├── app.js           # Kontroller utama aplikasi & state management
+│   │   ├── app.js           # Kontroller utama aplikasi, mode switcher, & state
 │   │   ├── db-manager.js    # Manajemen tabel dan konsol SQL
 │   │   └── editor.js        # Integrasi Monaco Editor
 │   └── index.html           # Single Page Application UI
 ├── server/
+│   ├── framework/
+│   │   └── sakuci/          # Core engine Sakuci Framework MVC
 │   ├── ApiHandler.php       # REST API endpoints (/api/*)
 │   ├── Database.php         # Database helper & normalizer query MySQL
-│   ├── Runner.php           # Sandbox process executor & MySQL simulation
+│   ├── Runner.php           # Sandbox process executor (Native & Framework)
 │   └── SeedData.php         # Seeder tabel sampel (mahasiswa, produk, dll)
 ├── router.php               # PHP built-in web server router
 ├── start.bat                # Windows 1-click launcher
