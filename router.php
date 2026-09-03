@@ -55,7 +55,12 @@ if ($uri !== '/' && file_exists($filePath) && !is_dir($filePath)) {
     return false; // Let PHP built-in server handle other static files
 }
 
-// Fallback to index.html for Single Page App
+// Fallback to index.html for Single Page App (hanya untuk main browser window, bukan iframe)
+if (isset($_SERVER['HTTP_SEC_FETCH_DEST']) && $_SERVER['HTTP_SEC_FETCH_DEST'] === 'iframe') {
+    http_response_code(204);
+    exit;
+}
+
 $indexFile = $publicDir . '/index.html';
 if (file_exists($indexFile)) {
     header('Content-Type: text/html; charset=utf-8');

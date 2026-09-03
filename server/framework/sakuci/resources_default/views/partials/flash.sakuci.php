@@ -1,8 +1,8 @@
 {{-- Notifikasi flash & daftar error validasi (Bootstrap alert) --}}
 
-@if (session('success'))
+@if (session('success') || session('pesan'))
     <div class="alert alert-success alert-dismissible fade show" role="alert">
-        {{ session('success') }}
+        {{ session('success') ?? session('pesan') }}
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Tutup"></button>
     </div>
 @endif

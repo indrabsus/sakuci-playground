@@ -34,6 +34,9 @@
                     <a class="nav-link {{ is_route('home') ? 'active' : '' }}" href="{{ route('home') }}">Beranda</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link fw-semibold text-primary {{ is_route('mahasiswa.index', 'mahasiswa.create', 'mahasiswa.edit') ? 'active' : '' }}" href="/mahasiswa">Data Mahasiswa</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link {{ is_route('docs') ? 'active' : '' }}" href="{{ route('docs') }}">Docs</a>
                 </li>
                 @php

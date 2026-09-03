@@ -1,35 +1,74 @@
 /**
- * Sakuci PHP & MySQL Ground - Monaco Editor Controller (Responsive & Mobile Ready)
+ * Sakuci PHP & MySQL Ground - Monaco Editor Controller (VS Code Dark+ Theme & Language Detection)
  */
 
 window.CodeEditor = {
     editor: null,
     isMonacoLoaded: false,
 
-    init: function (containerId, initialCode, onRunShortcut) {
+    detectLanguage: function (filename) {
+        if (!filename) return 'php';
+        const lower = filename.toLowerCase();
+        if (lower.endsWith('.blade.php') || lower.endsWith('.sakuci.php') || lower.endsWith('.php')) return 'php';
+        if (lower.endsWith('.html') || lower.endsWith('.htm')) return 'html';
+        if (lower.endsWith('.css')) return 'css';
+        if (lower.endsWith('.js') || lower.endsWith('.mjs')) return 'javascript';
+        if (lower.endsWith('.json')) return 'json';
+        if (lower.endsWith('.sql')) return 'sql';
+        if (lower.endsWith('.md')) return 'markdown';
+        return 'php';
+    },
+
+    init: function (containerId, initialCode, onRunShortcut, activeFile = 'index.php') {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        if (window.require && window.monaco) {
-            this.createMonacoInstance(container, initialCode, onRunShortcut);
+        const loadEditor = () => {
+            if (this.editor) return;
+            this.createMonacoInstance(container, initialCode, onRunShortcut, activeFile);
+        };
+
+        if (window.monaco) {
+            loadEditor();
             return;
         }
 
-        const checkMonaco = setInterval(() => {
+        const tryRequire = () => {
+            if (window.require && typeof window.require === 'function') {
+                try {
+                    window.require(['vs/editor/editor.main'], () => {
+                        loadEditor();
+                    }, (err) => {
+                        console.warn('Gagal memuat Monaco via CDN, beralih ke editor fallback:', err);
+                        this.createFallbackTextarea(container, initialCode, onRunShortcut);
+                    });
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+            return false;
+        };
+
+        if (tryRequire()) return;
+
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+            attempts++;
             if (window.monaco) {
-                clearInterval(checkMonaco);
-                this.createMonacoInstance(container, initialCode, onRunShortcut);
+                clearInterval(checkInterval);
+                loadEditor();
+            } else if (tryRequire()) {
+                clearInterval(checkInterval);
+            } else if (attempts > 30) {
+                clearInterval(checkInterval);
+                if (!this.editor && !this.isMonacoLoaded) {
+                    this.createFallbackTextarea(container, initialCode, onRunShortcut);
+                }
             }
         }, 100);
 
-        setTimeout(() => {
-            if (!this.isMonacoLoaded && !this.editor) {
-                clearInterval(checkMonaco);
-                this.createFallbackTextarea(container, initialCode, onRunShortcut);
-            }
-        }, 5000);
-
-        // Auto layout when window resizes (orientation change or split resize)
+        // Auto layout when window resizes
         window.addEventListener('resize', () => {
             if (this.editor) {
                 this.editor.layout();
@@ -37,40 +76,72 @@ window.CodeEditor = {
         });
     },
 
-    createMonacoInstance: function (container, initialCode, onRunShortcut) {
+    createMonacoInstance: function (container, initialCode, onRunShortcut, activeFile = 'index.php') {
         if (this.editor) return;
 
         const isMobile = window.innerWidth < 768;
+        const language = this.detectLanguage(activeFile);
 
-        monaco.editor.defineTheme('sakuci-dark', {
+        // Tema resmi VS Code Dark+ dengan Pewarnaan Sintaks Tajam & Berwarna
+        monaco.editor.defineTheme('vscode-dark-plus', {
             base: 'vs-dark',
             inherit: true,
             rules: [
-                { token: 'comment', foreground: '6e7681', fontStyle: 'italic' },
-                { token: 'keyword', foreground: 'ff7b72', fontStyle: 'bold' },
-                { token: 'string', foreground: 'a5d6ff' },
-                { token: 'number', foreground: '79c0ff' },
-                { token: 'variable', foreground: 'ffa657' },
-                { token: 'type', foreground: '7ee787' }
+                { token: '', foreground: 'd4d4d4' },
+                { token: 'comment', foreground: '6a9955', fontStyle: 'italic' },
+                { token: 'keyword', foreground: '569cd6', fontStyle: 'bold' },
+                { token: 'keyword.control', foreground: 'c586c0', fontStyle: 'bold' },
+                { token: 'keyword.php', foreground: '569cd6' },
+                { token: 'string', foreground: 'ce9178' },
+                { token: 'string.escape', foreground: 'd7ba7d' },
+                { token: 'number', foreground: 'b5cea8' },
+                { token: 'number.hex', foreground: 'b5cea8' },
+                { token: 'regexp', foreground: 'd16969' },
+                { token: 'type', foreground: '4ec9b0', fontStyle: 'bold' },
+                { token: 'type.identifier', foreground: '4ec9b0' },
+                { token: 'class', foreground: '4ec9b0' },
+                { token: 'function', foreground: 'dcdcaa' },
+                { token: 'function.call', foreground: 'dcdcaa' },
+                { token: 'variable', foreground: '9cdcfe' },
+                { token: 'variable.name', foreground: '9cdcfe' },
+                { token: 'variable.parameter', foreground: '9cdcfe' },
+                { token: 'variable.predefined', foreground: '4fc1ff' },
+                { token: 'constant', foreground: '4fc1ff' },
+                { token: 'delimiter', foreground: 'd4d4d4' },
+                { token: 'delimiter.bracket', foreground: 'ffd700' },
+                { token: 'tag', foreground: '569cd6' },
+                { token: 'tag.attribute.name', foreground: '9cdcfe' },
+                { token: 'tag.attribute.value', foreground: 'ce9178' },
+                { token: 'metatag', foreground: '569cd6' },
+                { token: 'metatag.content', foreground: 'ce9178' },
+                { token: 'attribute.name', foreground: '9cdcfe' },
+                { token: 'attribute.value', foreground: 'ce9178' }
             ],
             colors: {
-                'editor.background': '#0d1117',
-                'editor.foreground': '#c9d1d9',
-                'editorLineNumber.foreground': '#484f58',
-                'editorLineNumber.activeForeground': '#58a6ff',
+                'editor.background': '#1e1e1e',
+                'editor.foreground': '#d4d4d4',
+                'editorLineNumber.foreground': '#858585',
+                'editorLineNumber.activeForeground': '#c6c6c6',
                 'editor.selectionBackground': '#264f78',
-                'editor.inactiveSelectionBackground': '#203c5d',
-                'editorCursor.foreground': '#58a6ff'
+                'editor.inactiveSelectionBackground': '#3a3d41',
+                'editorCursor.foreground': '#aeafad',
+                'editorWhitespace.foreground': '#3e3e3d',
+                'editorIndentGuide.background': '#404040',
+                'editorIndentGuide.activeBackground': '#707070',
+                'editorBracketMatch.background': '#0064001a',
+                'editorBracketMatch.border': '#888888',
+                'editorGutter.background': '#1e1e1e'
             }
         });
 
         this.editor = monaco.editor.create(container, {
             value: initialCode || '',
-            language: 'php',
-            theme: document.body.dataset.theme === 'light' ? 'vs' : 'sakuci-dark',
+            language: language,
+            theme: document.body.dataset.theme === 'light' ? 'vs' : 'vscode-dark-plus',
             fontSize: isMobile ? 13 : 14,
-            fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, monospace',
-            lineNumbers: isMobile ? 'on' : 'on',
+            fontFamily: '"JetBrains Mono", "Cascadia Code", "Fira Code", Consolas, "Courier New", monospace',
+            fontLigatures: true,
+            lineNumbers: 'on',
             lineNumbersMinChars: isMobile ? 3 : 4,
             minimap: { enabled: !isMobile },
             automaticLayout: true,
@@ -78,10 +149,17 @@ window.CodeEditor = {
             tabSize: 4,
             insertSpaces: true,
             bracketPairColorization: { enabled: true },
+            guides: {
+                bracketPairs: true,
+                indentation: true
+            },
             wordWrap: 'on',
             suggestOnTriggerCharacters: true,
             renderWhitespace: 'selection',
-            touchSupport: 'auto'
+            touchSupport: 'auto',
+            folding: true,
+            cursorBlinking: 'smooth',
+            smoothScrolling: true
         });
 
         this.isMonacoLoaded = true;
@@ -98,13 +176,20 @@ window.CodeEditor = {
                 posEl.textContent = `Ln ${e.position.lineNumber}, Col ${e.position.column}`;
             }
         });
+
+        // Deteksi perubahan kode untuk auto-save ke cloud
+        this.editor.onDidChangeModelContent(() => {
+            if (window.App && typeof window.App.onCodeChange === 'function') {
+                window.App.onCodeChange();
+            }
+        });
     },
 
     createFallbackTextarea: function (container, initialCode, onRunShortcut) {
         container.innerHTML = '';
         const textarea = document.createElement('textarea');
         textarea.id = 'fallback-editor';
-        textarea.className = 'w-full h-full p-3 bg-[#0d1117] text-gray-200 terminal-font outline-none resize-none text-sm';
+        textarea.className = 'w-full h-full p-3 bg-[#1e1e1e] text-[#d4d4d4] font-mono outline-none resize-none text-sm leading-relaxed';
         textarea.value = initialCode || '';
         textarea.spellcheck = false;
 
@@ -124,6 +209,12 @@ window.CodeEditor = {
             }
         });
 
+        textarea.addEventListener('input', () => {
+            if (window.App && typeof window.App.onCodeChange === 'function') {
+                window.App.onCodeChange();
+            }
+        });
+
         container.appendChild(textarea);
     },
 
@@ -135,13 +226,20 @@ window.CodeEditor = {
         if (fallback) {
             return fallback.value;
         }
-        return null; // Editor belum siap, jangan timpa isi file dengan string kosong
+        return null;
     },
 
-    setCode: function (code) {
+    setCode: function (code, filename) {
         const safeCode = (code !== null && code !== undefined) ? String(code) : '';
         if (this.editor) {
             this.editor.setValue(safeCode);
+            if (filename && window.monaco) {
+                const lang = this.detectLanguage(filename);
+                const model = this.editor.getModel();
+                if (model) {
+                    monaco.editor.setModelLanguage(model, lang);
+                }
+            }
         } else {
             const fallback = document.getElementById('fallback-editor');
             if (fallback) fallback.value = safeCode;
@@ -150,7 +248,7 @@ window.CodeEditor = {
 
     setTheme: function (theme) {
         if (!this.editor || !window.monaco) return;
-        monaco.editor.setTheme(theme === 'light' ? 'vs' : 'sakuci-dark');
+        monaco.editor.setTheme(theme === 'light' ? 'vs' : 'vscode-dark-plus');
     },
 
     formatCode: function () {

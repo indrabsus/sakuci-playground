@@ -14,3 +14,8 @@ Thumbs.db
 # IDE configuration
 .vscode/
 .idea/
+
+# Environment configurations
+.env
+server/framework/sakuci/.env
+

@@ -16,9 +16,16 @@ class RedirectResponse extends Response
 {
     public function __construct(protected string $target = '/', int $status = 302)
     {
-        parent::__construct('', $status);
+        $resolved = $this->resolveTarget($target);
+        $cleanTarget = '/' . ltrim(parse_url($resolved, PHP_URL_PATH) ?: '/', '/');
+        $html = "<!-- SAKUCI_REDIRECT: {$cleanTarget} -->\n"
+              . "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body style='font-family:sans-serif;background:#0f172a;color:#94a3b8;padding:24px;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;'>"
+              . "<div style='text-align:center;'><p style='font-size:14px;'>Mengalihkan ke <strong>{$cleanTarget}</strong>...</p>"
+              . "<script>if(window.parent && window.parent.App && window.parent !== window){window.parent.App.visitRoute('{$cleanTarget}');}</script>"
+              . "</div></body></html>";
+        parent::__construct($html, $status);
 
-        $this->header('Location', $this->resolveTarget($target));
+        $this->header('Location', $resolved);
     }
 
     /** Redirect ke route berdasarkan namanya. */
@@ -30,7 +37,14 @@ class RedirectResponse extends Response
     public function to(string $target): static
     {
         $this->target = $target;
-        $this->header('Location', $this->resolveTarget($target));
+        $resolved = $this->resolveTarget($target);
+        $cleanTarget = '/' . ltrim(parse_url($resolved, PHP_URL_PATH) ?: '/', '/');
+        $this->content = "<!-- SAKUCI_REDIRECT: {$cleanTarget} -->\n"
+              . "<!DOCTYPE html><html><head><title>Redirecting...</title></head><body style='font-family:sans-serif;background:#0f172a;color:#94a3b8;padding:24px;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;'>"
+              . "<div style='text-align:center;'><p style='font-size:14px;'>Mengalihkan ke <strong>{$cleanTarget}</strong>...</p>"
+              . "<script>if(window.parent && window.parent.App && window.parent !== window){window.parent.App.visitRoute('{$cleanTarget}');}</script>"
+              . "</div></body></html>";
+        $this->header('Location', $resolved);
 
         return $this;
     }

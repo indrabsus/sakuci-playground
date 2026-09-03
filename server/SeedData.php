@@ -27,7 +27,8 @@ class SeedData
                     \"jurusan\" TEXT NOT NULL,
                     \"email\" TEXT NOT NULL,
                     \"ipk\" REAL DEFAULT 0.00,
-                    \"created_at\" DATETIME DEFAULT CURRENT_TIMESTAMP
+                    \"created_at\" DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    \"updated_at\" DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
             ");
 
@@ -48,6 +49,7 @@ class SeedData
                     \"harga\" REAL NOT NULL,
                     \"stok\" INTEGER DEFAULT 0,
                     \"created_at\" DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    \"updated_at\" DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (\"kategori_id\") REFERENCES \"kategori\"(\"id\") ON DELETE SET NULL
                 );
             ");

@@ -15,20 +15,22 @@ class Runner
         string $entrypoint = 'index.php', 
         string $mode = 'native', 
         string $routeUri = '/', 
-        string $httpMethod = 'GET'
+        string $httpMethod = 'GET',
+        array $postData = [],
+        int $userId = 0
     ): array
     {
         if ($mode === 'framework') {
-            return self::runFramework($files, $routeUri, $httpMethod);
+            return self::runFramework($files, $routeUri, $httpMethod, $postData, $userId);
         }
 
-        return self::runNative($files, $entrypoint);
+        return self::runNative($files, $entrypoint, $userId);
     }
 
     /**
      * Mode 1: Eksekusi PHP Murni (Sandbox dengan Simulasi MySQL 8.0)
      */
-    private static function runNative(array $files, string $entrypoint = 'index.php'): array
+    private static function runNative(array $files, string $entrypoint = 'index.php', int $userId = 0): array
     {
         $startTime = microtime(true);
         $tempBaseDir = __DIR__ . '/../data/temp';
@@ -36,7 +38,12 @@ class Runner
             mkdir($tempBaseDir, 0777, true);
         }
 
-        $runId = uniqid('run_native_', true);
+        if ($userId > 0) {
+            Database::ensureUserPracticeTables($userId);
+        }
+
+        $userPrefix = ($userId > 0) ? "u{$userId}_" : "";
+        $runId = uniqid("run_native_{$userPrefix}", true);
         $runDir = $tempBaseDir . '/' . $runId;
         mkdir($runDir, 0777, true);
 
@@ -64,7 +71,7 @@ class Runner
                 mkdir($parentDir, 0777, true);
             }
 
-            $transformedContent = self::transformUserCodeForSimulation($content);
+            $transformedContent = self::transformUserCodeForSimulation($content, $userId);
             $trimmed = trim($transformedContent);
             if (!empty($trimmed) && !str_starts_with($trimmed, '<?php') && !str_starts_with($trimmed, '<?=') && !str_starts_with($trimmed, '<html') && !str_starts_with($trimmed, '<!')) {
                 $transformedContent = "<?php\n" . $transformedContent;
@@ -80,7 +87,7 @@ class Runner
 
         $phpBinary = PHP_BINARY ?: 'php';
         $absBootstrap = realpath($bootstrapFile);
-        $extArgs = "-d extension=pdo_sqlite -d extension=sqlite3 -d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
+        $extArgs = self::getExtensionArgs() . "-d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
 
         $command = "\"{$phpBinary}\" {$extArgs} \"{$safeEntrypoint}\"";
 
@@ -157,7 +164,7 @@ class Runner
     /**
      * Mode 2: Eksekusi Sakuci Framework MVC
      */
-    private static function runFramework(array $files, string $routeUri = '/', string $httpMethod = 'GET'): array
+    private static function runFramework(array $files, string $routeUri = '/', string $httpMethod = 'GET', array $postData = [], int $userId = 0): array
     {
         $startTime = microtime(true);
         $tempBaseDir = __DIR__ . '/../data/temp';
@@ -165,7 +172,12 @@ class Runner
             mkdir($tempBaseDir, 0777, true);
         }
 
-        $runId = uniqid('run_sakuci_', true);
+        if ($userId > 0) {
+            Database::ensureUserPracticeTables($userId);
+        }
+
+        $userPrefix = ($userId > 0) ? "u{$userId}_" : "";
+        $runId = uniqid("run_sakuci_{$userPrefix}", true);
         $runDir = $tempBaseDir . '/' . $runId;
         mkdir($runDir, 0777, true);
 
@@ -195,16 +207,73 @@ class Runner
                 mkdir($parentDir, 0777, true);
             }
 
-            // Normalisasi kompatibilitas deklarasi tipe Model Sakuci (?string)
+            // Normalisasi kompatibilitas deklarasi tipe & modifier Model Sakuci ($table & $primaryKey)
             if (str_ends_with(strtolower($safeRelativePath), '.php')) {
                 $content = preg_replace('/protected\s+static\s+string\s+\$table\b/', 'protected static ?string $table', $content);
+                $content = preg_replace('/(protected|public)\s+(?!static\b)(\??string\s+)?\$table\b/', 'protected static ?string $table', $content);
+                $content = preg_replace('/(protected|public|private)?\s*static\s+(\??string\s+)?\$primaryKey\b/', 'protected string $primaryKey', $content);
+            }
+
+            // Normalisasi view .sakuci.php agar teks dokumentasi @extends / @section tanpa kurung tidak dikompilasi
+            if (str_ends_with(strtolower($safeRelativePath), '.sakuci.php')) {
+                $content = preg_replace('/(?<!@)@(extends|section)(?!\s*\()/i', '@@$1', $content);
+            }
+
+            // Normalisasi config/database.php agar selalu mengutamakan env('DB_SQLITE_PATH')
+            if (strtolower($safeRelativePath) === 'config/database.php') {
+                $content = str_replace("database_path('../data/latihan.sqlite')", "env('DB_SQLITE_PATH', database_path('../data/latihan.sqlite'))", $content);
             }
 
             file_put_contents($fullPath, $content);
         }
 
-        // 3. Konfigurasi koneksi database ke latihan.sqlite
-        $sqlitePath = addslashes(str_replace('\\', '/', realpath(__DIR__ . '/../data/latihan.sqlite') ?: (__DIR__ . '/../data/latihan.sqlite')));
+        // 3. Konfigurasi koneksi database (MySQL / SQLite)
+        $activeDriver = Database::getActiveDriver();
+        $tablePrefix = ($userId > 0) ? "u{$userId}_" : "";
+
+        $rawSqlite = realpath(__DIR__ . '/../data/latihan.sqlite') ?: (__DIR__ . '/../data/latihan.sqlite');
+        $sqlitePath = addslashes(str_replace('\\', '/', $rawSqlite));
+
+        // Buat direktori data di dalam $runDir dan salin latihan.sqlite sebagai fallback lokal
+        mkdir($runDir . '/data', 0777, true);
+        if (is_file($rawSqlite)) {
+            copy($rawSqlite, $runDir . '/data/latihan.sqlite');
+        }
+
+        if ($activeDriver === 'mysql') {
+            $env = Database::loadEnv();
+            $host = addslashes($env['host']);
+            $port = (int)$env['port'];
+            $dbName = addslashes($env['database']);
+            $user = addslashes($env['username']);
+            $pass = addslashes($env['password']);
+
+            $dbEnvStatements = <<<PHP
+putenv('DB_CONNECTION=mysql');
+putenv('DB_HOST={$host}');
+putenv('DB_PORT={$port}');
+putenv('DB_DATABASE={$dbName}');
+putenv('DB_USERNAME={$user}');
+putenv('DB_PASSWORD={$pass}');
+putenv('DB_TABLE_PREFIX={$tablePrefix}');
+\$_ENV['DB_CONNECTION'] = 'mysql';
+\$_ENV['DB_HOST'] = '{$host}';
+\$_ENV['DB_PORT'] = '{$port}';
+\$_ENV['DB_DATABASE'] = '{$dbName}';
+\$_ENV['DB_USERNAME'] = '{$user}';
+\$_ENV['DB_PASSWORD'] = '{$pass}';
+\$_ENV['DB_TABLE_PREFIX'] = '{$tablePrefix}';
+PHP;
+        } else {
+            $dbEnvStatements = <<<PHP
+putenv('DB_CONNECTION=sqlite');
+putenv('DB_SQLITE_PATH={$sqlitePath}');
+putenv('DB_TABLE_PREFIX={$tablePrefix}');
+\$_ENV['DB_CONNECTION'] = 'sqlite';
+\$_ENV['DB_SQLITE_PATH'] = '{$sqlitePath}';
+\$_ENV['DB_TABLE_PREFIX'] = '{$tablePrefix}';
+PHP;
+        }
 
         // Buat public/index.php jika belum ada
         $indexFile = $runDir . '/public/index.php';
@@ -214,8 +283,7 @@ class Runner
 define('SAKUCI_START', microtime(true));
 define('BASE_PATH', dirname(__DIR__));
 
-putenv('DB_CONNECTION=sqlite');
-putenv('DB_SQLITE_PATH={$sqlitePath}');
+{$dbEnvStatements}
 
 require BASE_PATH . '/core/bootstrap.php';
 
@@ -229,10 +297,21 @@ PHP;
         $queryStr = parse_url($routeUri, PHP_URL_QUERY) ?: '';
         $safeMethod = strtoupper($httpMethod ?: 'GET');
 
+        $sessionDir = $runDir . '/storage/framework/sessions';
+        @mkdir($sessionDir, 0777, true);
+        $escapedSessionDir = addslashes(str_replace('\\', '/', $sessionDir));
+
         $bootstrapFile = $runDir . '/_bootstrap_env.php';
         $escapedRunDir = addslashes(str_replace('\\', '/', $runDir));
+        $postExport = var_export($postData, true);
         $bootstrapCode = <<<PHP
 <?php
+@ini_set('session.save_path', '{$escapedSessionDir}');
+session_name('batara_session');
+\$_COOKIE['batara_session'] = 'sakucisess123456';
+if (session_status() === PHP_SESSION_NONE) {
+    session_id('sakucisess123456');
+}
 \$_SERVER['REQUEST_URI'] = '{$safeRoute}' . ('{$queryStr}' !== '' ? '?' . '{$queryStr}' : '');
 \$_SERVER['REQUEST_METHOD'] = '{$safeMethod}';
 \$_SERVER['SCRIPT_NAME'] = '/index.php';
@@ -242,15 +321,24 @@ PHP;
 \$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 \$_SERVER['DOCUMENT_ROOT'] = '{$escapedRunDir}/public';
 
-putenv('DB_CONNECTION=sqlite');
-putenv('DB_SQLITE_PATH={$sqlitePath}');
+if ('{$queryStr}' !== '') {
+    parse_str('{$queryStr}', \$_GET);
+}
+
+\$_POST = {$postExport};
+if (!empty(\$_POST) && '{$safeMethod}' === 'GET') {
+    \$_SERVER['REQUEST_METHOD'] = 'POST';
+}
+
+{$dbEnvStatements}
+putenv('SAKUCI_PLAYGROUND=true');
 PHP;
         file_put_contents($bootstrapFile, $bootstrapCode);
 
         // 5. Eksekusi proses
         $phpBinary = PHP_BINARY ?: 'php';
         $absBootstrap = realpath($bootstrapFile);
-        $extArgs = "-d extension=pdo_sqlite -d extension=sqlite3 -d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
+        $extArgs = self::getExtensionArgs() . "-d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
 
         $command = "\"{$phpBinary}\" {$extArgs} \"public/index.php\"";
 
@@ -306,7 +394,62 @@ PHP;
             $exitCode = 1;
         }
 
+        // Auto-follow redirect (misal setelah Simpan, Update, atau Hapus data)
+        $finalRoute = $safeRoute;
+        if ($exitCode === 0 && preg_match('/<!--\s*SAKUCI_REDIRECT:\s*(.*?)\s*-->/', $stdout, $redirMatch)) {
+            $targetUrl = trim($redirMatch[1]);
+            $targetPath = '/' . ltrim(parse_url($targetUrl, PHP_URL_PATH) ?: '/', '/');
+            $targetQuery = parse_url($targetUrl, PHP_URL_QUERY) ?: '';
+
+            $redirectBootstrap = <<<PHP
+<?php
+@ini_set('session.save_path', '{$escapedSessionDir}');
+session_name('batara_session');
+\$_COOKIE['batara_session'] = 'sakucisess123456';
+if (session_status() === PHP_SESSION_NONE) {
+    session_id('sakucisess123456');
+}
+\$_SERVER['REQUEST_URI'] = '{$targetPath}' . ('{$targetQuery}' !== '' ? '?' . '{$targetQuery}' : '');
+\$_SERVER['REQUEST_METHOD'] = 'GET';
+\$_SERVER['SCRIPT_NAME'] = '/index.php';
+\$_SERVER['SERVER_NAME'] = 'localhost';
+\$_SERVER['SERVER_PORT'] = '8000';
+\$_SERVER['HTTP_HOST'] = 'localhost:8000';
+\$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+\$_SERVER['DOCUMENT_ROOT'] = '{$escapedRunDir}/public';
+\$_GET = [];
+if ('{$targetQuery}' !== '') {
+    parse_str('{$targetQuery}', \$_GET);
+}
+\$_POST = [];
+{$dbEnvStatements}
+putenv('SAKUCI_PLAYGROUND=true');
+PHP;
+            file_put_contents($bootstrapFile, $redirectBootstrap);
+
+            $p2 = proc_open($command, $descriptors, $pipes2, $runDir);
+            if (is_resource($p2)) {
+                fclose($pipes2[0]);
+                $rStdout = stream_get_contents($pipes2[1]);
+                $rStderr = stream_get_contents($pipes2[2]);
+                fclose($pipes2[1]);
+                fclose($pipes2[2]);
+                proc_close($p2);
+
+                if ($rStdout !== false && trim($rStdout) !== '') {
+                    $stdout = $rStdout;
+                    $finalRoute = $targetPath;
+                }
+            }
+        }
+
         $duration = round((microtime(true) - $startTime) * 1000, 2);
+
+        $tempDb = $runDir . '/data/latihan.sqlite';
+        if (is_file($tempDb) && is_file($rawSqlite) && filemtime($tempDb) > filemtime($rawSqlite)) {
+            @copy($tempDb, $rawSqlite);
+        }
+
         self::deleteDirectory($runDir);
 
         return [
@@ -317,7 +460,7 @@ PHP;
             'execution_time_ms' => $duration,
             'timed_out' => $timedOut,
             'mode' => 'framework',
-            'route' => $safeRoute
+            'route' => $finalRoute
         ];
     }
 
@@ -358,8 +501,16 @@ PHP;
         @rmdir($dir);
     }
 
-    private static function transformUserCodeForSimulation(string $code): string
+    private static function transformUserCodeForSimulation(string $code, int $userId = 0): string
     {
+        // Isolasi nama tabel latihan jika user sedang aktif
+        if ($userId > 0) {
+            $tables = ['mahasiswa', 'kategori', 'produk', 'transaksi'];
+            foreach ($tables as $t) {
+                $code = preg_replace('/\b(FROM|INTO|UPDATE|JOIN|TABLE)\s+[`"]?' . $t . '[`"]?\b/i', '$1 u' . $userId . '_' . $t, $code);
+            }
+        }
+
         // 1. new PDO("mysql:host=...;dbname=...", ...) -> new PDO("sqlite:" . DB_PATH, ...)
         $code = preg_replace(
             '/new\s+PDO\s*\(\s*([\'"])mysql:[^\'"]*\\1(\s*,\s*[^,\)]+)?(\s*,\s*[^,\)]+)?(\s*,\s*[^,\)]+)?\s*\)/i',
@@ -607,5 +758,17 @@ try {
 }
 // --- Sakuci MySQL 8.0 Simulation Engine End ---
 PHP;
+    }
+
+    private static function getExtensionArgs(): string
+    {
+        $exts = [
+            '-d extension=pdo_sqlite',
+            '-d extension=sqlite3'
+        ];
+        if (!extension_loaded('pdo_mysql')) {
+            $exts[] = '-d extension=pdo_mysql';
+        }
+        return implode(' ', $exts) . ' ';
     }
 }

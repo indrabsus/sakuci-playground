@@ -6,6 +6,7 @@ use App\Controllers\Core\DatabaseController;
 use App\Controllers\Core\DocsController;
 use App\Controllers\Core\RoleController;
 use App\Controllers\Core\UserController;
+use App\Controllers\MahasiswaController;
 use Sakuci\Route;
 
 /*
@@ -25,6 +26,16 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('/docs', [DocsController::class, 'index'])->name('docs');
+
+// =========================================================================
+// CRUD DATA MAHASISWA (MahasiswaController)
+// =========================================================================
+Route::get('/mahasiswa', [MahasiswaController::class, 'index'])->name('mahasiswa.index');
+Route::get('/mahasiswa/tambah', [MahasiswaController::class, 'create'])->name('mahasiswa.create');
+Route::post('/mahasiswa/simpan', [MahasiswaController::class, 'store'])->name('mahasiswa.store');
+Route::get('/mahasiswa/{id}/edit', [MahasiswaController::class, 'edit'])->name('mahasiswa.edit');
+Route::post('/mahasiswa/{id}/update', [MahasiswaController::class, 'update'])->name('mahasiswa.update');
+Route::get('/mahasiswa/{id}/hapus', [MahasiswaController::class, 'destroy'])->name('mahasiswa.destroy');
 
 /*
 |--------------------------------------------------------------------------

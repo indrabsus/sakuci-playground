@@ -19,7 +19,7 @@ class VerifyCsrfToken extends Middleware
 
     public function handle(Request $request, \Closure $next): mixed
     {
-        if ($this->shouldSkip($request)) {
+        if (getenv('SAKUCI_PLAYGROUND') === 'true' || $this->shouldSkip($request)) {
             return $next($request);
         }
 

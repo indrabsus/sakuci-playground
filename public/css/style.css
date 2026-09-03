@@ -97,11 +97,61 @@ body {
     width: 6px;
     cursor: col-resize;
     background-color: var(--border-color);
-    transition: background-color 0.2s;
-    z-index: 10;
+    position: relative;
+    z-index: 20;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background-color 0.15s ease;
 }
+
+/* Area klik/drag lebih luas (hit-target 16px) agar mudah di-drag dan tidak mudah lepas */
+.resizer-x::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    right: -5px;
+    z-index: 25;
+}
+
+/* Indikator pegangan di tengah (center grab handle) */
+.resizer-x::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 36px;
+    border-radius: 9999px;
+    background-color: var(--text-muted);
+    opacity: 0.5;
+    transition: all 0.15s ease;
+}
+
+.resizer-x:hover::after,
+.resizer-x.is-dragging::after {
+    background-color: #ffffff;
+    height: 48px;
+    opacity: 1;
+}
+
 .resizer-x:hover, .resizer-x.is-dragging {
     background-color: var(--accent-blue);
+}
+
+/* Saat split pane sedang di-drag, matikan pointer-events iframe & editor agar mouseup tidak tertelan */
+body.is-resizing-split {
+    cursor: col-resize !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+body.is-resizing-split iframe,
+body.is-resizing-split #monaco-editor-container {
+    pointer-events: none !important;
 }
 
 /* Terminal Console Styling */

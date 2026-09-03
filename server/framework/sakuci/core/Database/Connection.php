@@ -36,7 +36,27 @@ class Connection
 
         try {
             if (($config['driver'] ?? 'mysql') === 'sqlite') {
-                $path = $config['database'];
+                $envSqlite = getenv('DB_SQLITE_PATH') ?: (function_exists('env') ? env('DB_SQLITE_PATH') : null);
+                if (!empty($envSqlite) && is_file($envSqlite)) {
+                    $path = $envSqlite;
+                } else {
+                    $path = $config['database'] ?? ':memory:';
+                    if (!is_file($path)) {
+                        // Cari database latihan.sqlite utama pada root direktori playground
+                        $candidates = [
+                            __DIR__ . '/../../../../data/latihan.sqlite',
+                            dirname(BASE_PATH ?? '') . '/latihan.sqlite',
+                            dirname(BASE_PATH ?? '', 2) . '/data/latihan.sqlite',
+                            dirname(BASE_PATH ?? '', 3) . '/data/latihan.sqlite',
+                        ];
+                        foreach ($candidates as $cand) {
+                            if (is_file($cand)) {
+                                $path = $cand;
+                                break;
+                            }
+                        }
+                    }
+                }
 
                 if ($path !== ':memory:' && ! is_file($path)) {
                     if (! is_dir(dirname($path))) {

@@ -30,7 +30,7 @@ use Sakuci\Exceptions\HttpException;
  * @method static int          count(string $column = '*')
  * @method static static|null  first()
  */
-abstract class Model implements \JsonSerializable
+abstract class Model implements \JsonSerializable, \ArrayAccess
 {
     /** Nama tabel; jika null ditebak dari nama class (Post -> posts). */
     protected static ?string $table = null;
@@ -140,6 +140,32 @@ abstract class Model implements \JsonSerializable
         unset($this->attributes[$key], $this->relations[$key]);
     }
 
+    /*
+    |----------------------------------------------------------------------
+    | ArrayAccess
+    |----------------------------------------------------------------------
+    */
+
+    public function offsetExists(mixed $offset): bool
+    {
+        return $this->__isset((string) $offset);
+    }
+
+    public function offsetGet(mixed $offset): mixed
+    {
+        return $this->__get((string) $offset);
+    }
+
+    public function offsetSet(mixed $offset, mixed $value): void
+    {
+        $this->__set((string) $offset, $value);
+    }
+
+    public function offsetUnset(mixed $offset): void
+    {
+        $this->__unset((string) $offset);
+    }
+
     protected function castValue(string $key, mixed $value): mixed
     {
         if ($value === null || ! isset($this->casts[$key])) {
@@ -179,13 +205,18 @@ abstract class Model implements \JsonSerializable
 
     public static function table(): string
     {
-        if (static::$table !== null) {
-            return static::$table;
+        $base = static::$table;
+        if ($base === null) {
+            $class = substr(strrchr(static::class, '\\') ?: static::class, 1) ?: static::class;
+            $base = str_plural(str_snake($class));
         }
 
-        $class = substr(strrchr(static::class, '\\') ?: static::class, 1) ?: static::class;
+        $prefix = getenv('DB_TABLE_PREFIX') ?: ($_ENV['DB_TABLE_PREFIX'] ?? '');
+        if (!empty($prefix) && !str_starts_with($base, $prefix)) {
+            return $prefix . $base;
+        }
 
-        return str_plural(str_snake($class));
+        return $base;
     }
 
     public static function query(): QueryBuilder
@@ -263,18 +294,49 @@ abstract class Model implements \JsonSerializable
     |----------------------------------------------------------------------
     */
 
+    /** Cache daftar kolom per tabel */
+    protected static array $tableColumnsCache = [];
+
+    public function getTableColumns(): array
+    {
+        $table = static::table();
+        if (isset(static::$tableColumnsCache[$table])) {
+            return static::$tableColumnsCache[$table];
+        }
+
+        try {
+            $pdo = Connection::pdo();
+            $driver = Connection::driver();
+            if ($driver === 'sqlite') {
+                $stmt = $pdo->query("PRAGMA table_info(\"{$table}\")");
+                $cols = $stmt ? $stmt->fetchAll(\PDO::FETCH_COLUMN, 1) : [];
+            } else {
+                $stmt = $pdo->query("DESCRIBE `{$table}`");
+                $cols = $stmt ? $stmt->fetchAll(\PDO::FETCH_COLUMN) : [];
+            }
+            return static::$tableColumnsCache[$table] = $cols ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     public function save(): bool
     {
         $attributes = $this->attributes;
+        $cols = $this->getTableColumns();
 
         if ($this->timestamps) {
             $now = date('Y-m-d H:i:s');
+            $hasCreatedAt = empty($cols) || in_array('created_at', $cols, true);
+            $hasUpdatedAt = empty($cols) || in_array('updated_at', $cols, true);
 
-            if (! $this->exists) {
+            if ($hasCreatedAt && ! $this->exists) {
                 $attributes['created_at'] = $attributes['created_at'] ?? $now;
             }
 
-            $attributes['updated_at'] = $now;
+            if ($hasUpdatedAt) {
+                $attributes['updated_at'] = $now;
+            }
         }
 
         // Nilai array/bool disiapkan agar aman disimpan.
@@ -284,6 +346,11 @@ abstract class Model implements \JsonSerializable
             } elseif (is_bool($value)) {
                 $attributes[$key] = (int) $value;
             }
+        }
+
+        // Filter atribut agar hanya kolom yang benar-benar ada di tabel yang dikirim ke database
+        if (! empty($cols)) {
+            $attributes = array_intersect_key($attributes, array_flip($cols));
         }
 
         if ($this->exists) {

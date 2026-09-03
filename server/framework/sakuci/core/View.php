@@ -165,9 +165,15 @@ class View
 
             switch ($name) {
                 case 'extends':
+                    if (trim($expr) === '') {
+                        return '@extends';
+                    }
                     return "<?php \\Sakuci\\View::extend({$expr}); ?>";
 
                 case 'section':
+                    if (trim($expr) === '') {
+                        return '@section';
+                    }
                     return "<?php \\Sakuci\\View::startSection({$expr}); ?>";
 
                 case 'endsection':
@@ -310,14 +316,19 @@ class View
         return (string) ob_get_clean();
     }
 
-    public static function extend(string $layout): void
+    public static function extend(?string $layout = null): void
     {
-        static::$layout = $layout;
+        if ($layout !== null && $layout !== '') {
+            static::$layout = $layout;
+        }
     }
 
     /** @section('name') atau @section('name', 'isi singkat') */
-    public static function startSection(string $name, mixed $content = null): void
+    public static function startSection(?string $name = null, mixed $content = null): void
     {
+        if ($name === null || $name === '') {
+            return;
+        }
         if ($content !== null) {
             static::$sections[$name] ??= $content instanceof \Closure ? $content() : (string) $content;
 

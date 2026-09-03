@@ -11,16 +11,43 @@ const DEFAULT_NATIVE_FILES = {
 const DEFAULT_NATIVE_FOLDERS = [];
 
 const DEFAULT_FRAMEWORK_FILES = {
+    '.env': `# ==============================================================================
+# SAKUCI FRAMEWORK ENVIRONMENT CONFIGURATION (.env)
+# ==============================================================================
+APP_NAME="Sakuci Framework"
+APP_ENV=local
+APP_KEY=base64:sakuci_secret_key_playground_12345
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+APP_TIMEZONE=Asia/Jakarta
+
+# ==============================================================================
+# KONFIGURASI BASIS DATA (DATABASE)
+# Pilihan koneksi: sqlite | mysql
+# ==============================================================================
+DB_CONNECTION=sqlite
+
+# Pengaturan SQLite (Bawaan Playground - Otomatis terhubung ke database latihan)
+DB_SQLITE_PATH="../data/latihan.sqlite"
+
+# Pengaturan MySQL / MariaDB (Jika ingin mencoba koneksi MySQL lokal seperti XAMPP)
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=latihan
+DB_USERNAME=root
+DB_PASSWORD=
+`,
     'routes/web.php': `<?php
 
 use Sakuci\\Route;
 use App\\Controllers\\HomeController;
+use App\\Controllers\\MahasiswaController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes - Sakuci Framework
 |--------------------------------------------------------------------------
-| Daftarkan route aplikasi Anda di sini.
+| Daftarkan seluruh route aplikasi Anda di sini.
 */
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -29,14 +56,21 @@ Route::get('/halo', function () {
     return '<h1>Halo dari Sakuci Framework! 🚀</h1><p>Route closure bekerja dengan sempurna.</p>';
 });
 
-Route::get('/mahasiswa', [HomeController::class, 'mahasiswa'])->name('mahasiswa');
+// =========================================================================
+// CRUD DATA MAHASISWA (MahasiswaController)
+// =========================================================================
+Route::get('/mahasiswa', [MahasiswaController::class, 'index'])->name('mahasiswa.index');
+Route::get('/mahasiswa/tambah', [MahasiswaController::class, 'create'])->name('mahasiswa.create');
+Route::post('/mahasiswa/simpan', [MahasiswaController::class, 'store'])->name('mahasiswa.store');
+Route::get('/mahasiswa/{id}/edit', [MahasiswaController::class, 'edit'])->name('mahasiswa.edit');
+Route::post('/mahasiswa/{id}/update', [MahasiswaController::class, 'update'])->name('mahasiswa.update');
+Route::get('/mahasiswa/{id}/hapus', [MahasiswaController::class, 'destroy'])->name('mahasiswa.destroy');
 `,
     'app/Controllers/HomeController.php': `<?php
 
 namespace App\\Controllers;
 
 use Sakuci\\Controller;
-use App\\Models\\Mahasiswa;
 
 class HomeController extends Controller
 {
@@ -47,15 +81,116 @@ class HomeController extends Controller
             'version' => '1.0.0'
         ]);
     }
+}
+`,
+    'app/Controllers/MahasiswaController.php': `<?php
 
-    public function mahasiswa()
+namespace App\\Controllers;
+
+use Sakuci\\Controller;
+use Sakuci\\Http\\Request;
+use App\\Models\\Mahasiswa;
+
+class MahasiswaController extends Controller
+{
+    /**
+     * [READ] Menampilkan seluruh daftar data mahasiswa
+     */
+    public function index()
     {
-        // Mengambil data dari database simulasi latihan via Sakuci Model
         $daftarMahasiswa = Mahasiswa::all();
 
-        return view('mahasiswa', [
+        return view('mahasiswa.index', [
             'mahasiswa' => $daftarMahasiswa
         ]);
+    }
+
+    /**
+     * [CREATE] Menampilkan formulir tambah data mahasiswa baru
+     */
+    public function create()
+    {
+        return view('mahasiswa.create');
+    }
+
+    /**
+     * [STORE] Menyimpan data mahasiswa baru ke database (SQLite / MySQL)
+     */
+    public function store(Request $request)
+    {
+        $nim = trim((string) $request->input('nim', ''));
+        $nama = trim((string) $request->input('nama', ''));
+        $jurusan = trim((string) $request->input('jurusan', ''));
+        $email = trim((string) $request->input('email', ''));
+        $ipk = (float) $request->input('ipk', 0.0);
+
+        if ($nim === '' || $nama === '') {
+            return $this->back()->with('error', 'NIM dan Nama Mahasiswa wajib diisi!');
+        }
+
+        Mahasiswa::create([
+            'nim' => $nim,
+            'nama' => $nama,
+            'jurusan' => $jurusan,
+            'email' => $email,
+            'ipk' => $ipk,
+        ]);
+
+        return $this->redirect('/mahasiswa')->with('pesan', "Mahasiswa {$nama} berhasil ditambahkan!");
+    }
+
+    /**
+     * [EDIT] Menampilkan formulir edit data mahasiswa berdasarkan ID
+     */
+    public function edit(mixed $id)
+    {
+        $mhs = Mahasiswa::find($id);
+
+        if (!$mhs) {
+            return $this->redirect('/mahasiswa')->with('error', 'Data mahasiswa tidak ditemukan!');
+        }
+
+        return view('mahasiswa.edit', [
+            'mhs' => $mhs
+        ]);
+    }
+
+    /**
+     * [UPDATE] Memperbarui data mahasiswa di database
+     */
+    public function update(Request $request, mixed $id)
+    {
+        $mhs = Mahasiswa::find($id);
+
+        if (!$mhs) {
+            return $this->redirect('/mahasiswa')->with('error', 'Data mahasiswa tidak ditemukan!');
+        }
+
+        $mhs->update([
+            'nim' => trim((string) $request->input('nim', $mhs->nim)),
+            'nama' => trim((string) $request->input('nama', $mhs->nama)),
+            'jurusan' => trim((string) $request->input('jurusan', $mhs->jurusan)),
+            'email' => trim((string) $request->input('email', $mhs->email)),
+            'ipk' => (float) $request->input('ipk', $mhs->ipk),
+        ]);
+
+        return $this->redirect('/mahasiswa')->with('pesan', "Data {$mhs->nama} berhasil diperbarui!");
+    }
+
+    /**
+     * [DELETE] Menghapus data mahasiswa dari database
+     */
+    public function destroy(mixed $id)
+    {
+        $mhs = Mahasiswa::find($id);
+
+        if ($mhs) {
+            $nama = $mhs->nama;
+            $mhs->delete();
+            return $this->redirect('/mahasiswa')->with('pesan', "Mahasiswa {$nama} berhasil dihapus!");
+        }
+
+        return $this->redirect('/mahasiswa')->with('error', 'Data tidak ditemukan!');
     }
 }
 `,
@@ -68,111 +203,393 @@ use Sakuci\\Database\\Model;
 class Mahasiswa extends Model
 {
     protected static ?string $table = 'mahasiswa';
+    protected string $primaryKey = 'id';
     public bool $timestamps = false;
+    protected array $fillable = ['nim', 'nama', 'jurusan', 'email', 'ipk'];
 }
 `,
-    'resources/views/welcome.sakuci.php': `<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ \$appName }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-xl w-full bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-2xl text-center">
-        <div class="inline-flex items-center justify-center w-16 h-16 bg-sky-500/20 text-sky-400 text-3xl rounded-2xl mb-4">
-            ⚡
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-2">
-            Selamat Datang di <span class="text-sky-400">Sakuci Framework</span>
-        </h1>
-        <p class="text-slate-400 text-sm mb-6 leading-relaxed">
-            Kerangka kerja PHP ringan bergaya Laravel tanpa Composer & dependensi eksternal.
-            Mendukung Route, Controller, Model (ORM), dan View (.sakuci.php).
-        </p>
-        
-        <div class="grid grid-cols-2 gap-3 mb-6 text-left">
-            <button onclick="parent.App.visitRoute('/halo')" class="p-3.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 rounded-xl transition text-left cursor-pointer">
-                <div class="text-xs font-semibold text-sky-400 mb-1">Route Sederhana →</div>
-                <div class="text-[11px] text-slate-400">Uji rute <code>/halo</code></div>
-            </button>
-            <button onclick="parent.App.visitRoute('/mahasiswa')" class="p-3.5 bg-slate-900/60 hover:bg-slate-900 border border-slate-700 rounded-xl transition text-left cursor-pointer">
-                <div class="text-xs font-semibold text-emerald-400 mb-1">Database Model →</div>
-                <div class="text-[11px] text-slate-400">Uji rute <code>/mahasiswa</code></div>
-            </button>
-        </div>
+    'app/Models/User.php': `<?php
 
-        <div class="text-[11px] text-slate-500 font-mono">
-            Edit berkas di <code class="text-sky-300">routes/web.php</code>, <code class="text-sky-300">app/Controllers/</code>, & <code class="text-sky-300">resources/views/</code>
-        </div>
-    </div>
+namespace App\\Models;
+
+use Sakuci\\Database\\Model;
+
+class User extends Model
+{
+    protected static ?string $table = 'users';
+    protected string $primaryKey = 'id';
+    public bool $timestamps = true;
+    protected array $fillable = ['username', 'email', 'password', 'role'];
+}
+`,
+    'config/app.php': `<?php
+
+return [
+    'name' => env('APP_NAME', 'Sakuci Framework'),
+    'env'  => env('APP_ENV', 'local'),
+    'debug' => (bool) env('APP_DEBUG', true),
+    'url'  => env('APP_URL', 'http://localhost:8000'),
+    'timezone' => 'Asia/Jakarta',
+];
+`,
+    'config/database.php': `<?php
+
+return [
+    'default' => env('DB_CONNECTION', 'sqlite'),
+    'connections' => [
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'database' => env('DB_SQLITE_PATH', database_path('../data/latihan.sqlite')),
+        ],
+    ],
+];
+`,
+    'resources/views/layouts/app.sakuci.php': `<!doctype html>
+<html lang="id" data-bs-theme="dark">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@yield('title', 'Sakuci Framework')</title>
+
+    {{-- Bootstrap 5.3 & Icons CDN --}}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .card { border-radius: 12px; }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+
+@include('partials.navbar')
+
+<main class="container flex-grow-1 py-4">
+    @include('partials.flash')
+    @yield('content')
+</main>
+
+<footer class="py-3 border-top text-center text-body-secondary small mt-auto">
+    Sakuci Framework &copy; {{ date('Y') }} &bull; MVC Ringan Tanpa Composer
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+@yield('scripts')
+
 </body>
 </html>
 `,
-    'resources/views/mahasiswa.sakuci.php': `<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Mahasiswa - Sakuci Framework</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 p-6 min-h-screen">
-    <div class="max-w-4xl mx-auto">
-        <div class="flex items-center justify-between mb-6 pb-4 border-b border-slate-800">
-            <div>
-                <button onclick="parent.App.visitRoute('/')" class="text-xs text-sky-400 hover:underline mb-1 inline-block cursor-pointer">← Kembali ke Beranda</button>
-                <h1 class="text-xl font-bold text-white flex items-center gap-2">
-                    <span>🎓</span> Daftar Mahasiswa (Sakuci Model ORM)
-                </h1>
-            </div>
-            <span class="px-3 py-1 bg-emerald-950 text-emerald-300 border border-emerald-800 rounded-full text-xs font-mono">
-                Model: Mahasiswa::all()
-            </span>
-        </div>
-
-        <div class="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-xl">
-            <table class="w-full text-left text-xs">
-                <thead class="bg-slate-900/80 text-slate-400 uppercase font-mono border-b border-slate-700">
-                    <tr>
-                        <th class="p-3">ID</th>
-                        <th class="p-3">NIM</th>
-                        <th class="p-3">Nama</th>
-                        <th class="p-3">Jurusan</th>
-                        <th class="p-3">IPK</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-700/60 font-mono">
-                    @foreach ($mahasiswa as $mhs)
-                    <tr class="hover:bg-slate-700/30 transition">
-                        <td class="p-3 text-slate-400">{{ $mhs->id }}</td>
-                        <td class="p-3 font-semibold text-sky-400">{{ $mhs->nim }}</td>
-                        <td class="p-3 text-slate-200">{{ $mhs->nama }}</td>
-                        <td class="p-3 text-slate-300">{{ $mhs->jurusan }}</td>
-                        <td class="p-3">
-                            <span class="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800 text-[11px]">
-                                {{ $mhs->ipk }}
-                            </span>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+    'resources/views/partials/navbar.sakuci.php': `<nav class="navbar navbar-expand-lg bg-body border-bottom sticky-top shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary d-flex items-center gap-2" href="/">
+            <span>⚡</span> Sakuci Framework
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Beranda</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-semibold text-primary" href="/mahasiswa">Data Mahasiswa (CRUD)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/halo">Test Route /halo</a>
+                </li>
+            </ul>
+            <span class="badge text-bg-success font-monospace">SQLite Active</span>
         </div>
     </div>
-</body>
-</html>
+</nav>
+`,
+    'resources/views/partials/flash.sakuci.php': `@if (session('pesan') || session('success'))
+<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    {{ session('pesan') ?? session('success') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+@endif
+
+@if (session('error'))
+<div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    {{ session('error') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+@endif
+`,
+    'resources/views/welcome.sakuci.php': `@extends('layouts.app')
+
+@section('title', 'Selamat Datang di Sakuci Framework')
+
+@section('content')
+<div class="row justify-content-center my-4">
+    <div class="col-lg-9 text-center">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill mb-3">
+            Sakuci Framework v1.0.0
+        </span>
+        <h1 class="display-5 fw-bold mb-3">
+            Kerangka PHP rasa Laravel, <span class="text-primary">tanpa Composer</span>
+        </h1>
+        <p class="lead text-body-secondary mb-4 mx-auto" style="max-width: 650px;">
+            Mendukung arsitektur MVC lengkap: Route, Controller, Model ORM, Blade Template (<code>@@extends</code> &amp; <code>@@section</code>), dan Interactive Terminal CLI (<code>php sakuci</code>).
+        </p>
+        <div class="d-flex justify-content-center gap-3 mb-5">
+            <a href="/mahasiswa" class="btn btn-primary btn-lg px-4 shadow-sm">
+                🎓 Uji CRUD Mahasiswa
+            </a>
+            <a href="/halo" class="btn btn-outline-secondary btn-lg px-4">
+                🚀 Route Sederhana
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+            <div class="card-body">
+                <div class="fs-1 mb-2">🎯</div>
+                <h5 class="card-title fw-bold">Blade Templating</h5>
+                <p class="card-text text-body-secondary small">
+                    Gunakan layout induk <code>@@extends('layouts.app')</code> dan <code>@@section('content')</code> seperti Laravel.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+            <div class="card-body">
+                <div class="fs-1 mb-2">📦</div>
+                <h5 class="card-title fw-bold">Model ORM</h5>
+                <p class="card-text text-body-secondary small">
+                    Query database mudah dengan <code>Mahasiswa::all()</code>, <code>find()</code>, <code>create()</code>, dan <code>update()</code>.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm p-3">
+            <div class="card-body">
+                <div class="fs-1 mb-2">💻</div>
+                <h5 class="card-title fw-bold">Sakuci CLI Terminal</h5>
+                <p class="card-text text-body-secondary small">
+                    Gunakan tab Terminal untuk menjalankan <code>php sakuci make:model</code>, <code>migrate</code>, dan <code>route:list</code>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+`,
+    'resources/views/mahasiswa/index.sakuci.php': `@extends('layouts.app')
+
+@section('title', 'Data Mahasiswa - Sakuci Framework')
+
+@section('content')
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">🎓 Data Mahasiswa</h2>
+        <p class="text-body-secondary small mb-0">
+            Aplikasi CRUD menggunakan <code>MahasiswaController</code> &amp; <code>Sakuci\\Database\\Model</code>
+        </p>
+    </div>
+    <div>
+        <a href="/mahasiswa/tambah" class="btn btn-primary btn-sm px-3 shadow-sm">
+            <i class="bi bi-plus-lg me-1"></i> + Tambah Mahasiswa
+        </a>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 text-nowrap">
+            <thead class="table-dark text-uppercase font-monospace small">
+                <tr>
+                    <th class="py-3 px-3 text-center" style="width: 60px;">ID</th>
+                    <th class="py-3 px-3">NIM</th>
+                    <th class="py-3 px-3">Nama Mahasiswa</th>
+                    <th class="py-3 px-3">Jurusan</th>
+                    <th class="py-3 px-3">Email</th>
+                    <th class="py-3 px-3 text-center">IPK</th>
+                    <th class="py-3 px-3 text-center" style="width: 150px;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse ($mahasiswa as $mhs)
+                <tr>
+                    <td class="text-center font-monospace text-body-secondary">{{ $mhs->id }}</td>
+                    <td class="font-monospace fw-bold text-primary">{{ $mhs->nim }}</td>
+                    <td class="fw-semibold">{{ $mhs->nama }}</td>
+                    <td class="text-body-secondary">{{ $mhs->jurusan }}</td>
+                    <td class="small text-body-secondary">{{ $mhs->email ?? '-' }}</td>
+                    <td class="text-center">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 font-monospace">
+                            {{ number_format((float)$mhs->ipk, 2) }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="/mahasiswa/{{ $mhs->id }}/edit" class="btn btn-outline-warning">
+                                Edit
+                            </a>
+                            <a href="/mahasiswa/{{ $mhs->id }}/hapus" onclick="return confirm('Yakin ingin menghapus data {{ $mhs->nama }}?')" class="btn btn-outline-danger">
+                                Hapus
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-body-secondary">
+                        <p class="mb-2">Belum ada data mahasiswa.</p>
+                        <a href="/mahasiswa/tambah" class="btn btn-sm btn-primary">+ Tambah Mahasiswa Pertama</a>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer bg-body-tertiary d-flex justify-content-between align-items-center py-2 px-3 small text-body-secondary">
+        <span>Total: <strong>{{ count($mahasiswa) }}</strong> Mahasiswa</span>
+        <span class="font-monospace">Route: /mahasiswa</span>
+    </div>
+</div>
+@endsection
+`,
+    'resources/views/mahasiswa/create.sakuci.php': `@extends('layouts.app')
+
+@section('title', 'Tambah Mahasiswa - Sakuci Framework')
+
+@section('content')
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                <div>
+                    <h4 class="fw-bold mb-0">➕ Tambah Mahasiswa Baru</h4>
+                    <small class="text-body-secondary">Menjalankan <code>MahasiswaController@store</code></small>
+                </div>
+                <a href="/mahasiswa" class="btn btn-outline-secondary btn-sm">← Batal</a>
+            </div>
+
+            <form action="/mahasiswa/simpan" method="POST">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Nomor Induk Mahasiswa (NIM) *</label>
+                    <input type="text" name="nim" required placeholder="Contoh: 2024009" class="form-control font-monospace">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Nama Lengkap *</label>
+                    <input type="text" name="nama" required placeholder="Contoh: Muhammad Ilham" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Jurusan</label>
+                    <select name="jurusan" class="form-select">
+                        <option value="Teknik Informatika">Teknik Informatika</option>
+                        <option value="Sistem Informasi">Sistem Informasi</option>
+                        <option value="Teknik Komputer">Teknik Komputer</option>
+                        <option value="Manajemen Informatika">Manajemen Informatika</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Alamat Email</label>
+                    <input type="email" name="email" placeholder="Contoh: ilham@kampus.ac.id" class="form-control">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold">Indeks Prestasi Kumulatif (IPK)</label>
+                    <input type="number" step="0.01" min="0" max="4.00" name="ipk" value="3.50" class="form-control font-monospace">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                    <a href="/mahasiswa" class="btn btn-secondary btn-sm px-3">Batal</a>
+                    <button type="submit" class="btn btn-primary btn-sm px-4">
+                        💾 Simpan Mahasiswa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
+`,
+    'resources/views/mahasiswa/edit.sakuci.php': `@extends('layouts.app')
+
+@section('title', 'Edit Mahasiswa - Sakuci Framework')
+
+@section('content')
+<div class="row justify-content-center">
+    <div class="col-lg-6 col-md-8">
+        <div class="card border-0 shadow-sm p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                <div>
+                    <h4 class="fw-bold mb-0">✏️ Edit Data Mahasiswa</h4>
+                    <small class="text-body-secondary">Menjalankan <code>MahasiswaController@update</code> (ID: {{ $mhs->id }})</small>
+                </div>
+                <a href="/mahasiswa" class="btn btn-outline-secondary btn-sm">← Batal</a>
+            </div>
+
+            <form action="/mahasiswa/{{ $mhs->id }}/update" method="POST">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Nomor Induk Mahasiswa (NIM) *</label>
+                    <input type="text" name="nim" value="{{ $mhs->nim }}" required class="form-control font-monospace">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Nama Lengkap *</label>
+                    <input type="text" name="nama" value="{{ $mhs->nama }}" required class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Jurusan</label>
+                    <select name="jurusan" class="form-select">
+                        <option value="Teknik Informatika" {{ $mhs->jurusan === 'Teknik Informatika' ? 'selected' : '' }}>Teknik Informatika</option>
+                        <option value="Sistem Informasi" {{ $mhs->jurusan === 'Sistem Informasi' ? 'selected' : '' }}>Sistem Informasi</option>
+                        <option value="Teknik Komputer" {{ $mhs->jurusan === 'Teknik Komputer' ? 'selected' : '' }}>Teknik Komputer</option>
+                        <option value="Manajemen Informatika" {{ $mhs->jurusan === 'Manajemen Informatika' ? 'selected' : '' }}>Manajemen Informatika</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Alamat Email</label>
+                    <input type="email" name="email" value="{{ $mhs->email }}" class="form-control">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label small fw-semibold">Indeks Prestasi Kumulatif (IPK)</label>
+                    <input type="number" step="0.01" min="0" max="4.00" name="ipk" value="{{ $mhs->ipk }}" class="form-control font-monospace">
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-2 border-top">
+                    <a href="/mahasiswa" class="btn btn-secondary btn-sm px-3">Batal</a>
+                    <button type="submit" class="btn btn-warning btn-sm px-4">
+                        💾 Perbarui Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
 `
 };
 
 const DEFAULT_FRAMEWORK_FOLDERS = [
-    'routes',
     'app',
     'app/Controllers',
+    'app/Middleware',
     'app/Models',
+    'config',
     'resources',
-    'resources/views'
+    'resources/views',
+    'resources/views/layouts',
+    'resources/views/partials',
+    'resources/views/mahasiswa',
+    'routes'
 ];
 
 window.App = {
@@ -189,15 +606,22 @@ window.App = {
     targetFolderForCreate: '',
     isSidebarOpen: true,
 
-    // State Tampilan
-    activeTab: 'console', // 'console' | 'html' | 'db'
-    mobileView: 'editor', // 'files' | 'editor' | 'console' | 'html' | 'db'
+    // State Tampilan & Rute (Default: HTML Preview)
+    activeTab: 'html', // 'html' | 'terminal' | 'db'
+    mobileView: 'editor', // 'files' | 'editor' | 'html' | 'terminal' | 'db'
     isRunning: false,
     theme: 'dark',
+    terminalHistory: [],
+    historyIndex: -1,
+    routeHistory: ['/'],
+    routeHistoryIndex: 0,
+    currentUser: null,
+    autoSaveTimer: null,
 
     init: function () {
         this.playgroundMode = localStorage.getItem('sakuci_playground_mode') || 'native';
         this.loadFilesFromStorage();
+        this.setupAuth();
         this.setupSplitPane();
         this.setupTabs();
         this.setupMobileNav();
@@ -206,11 +630,12 @@ window.App = {
         this.setupExplorerModals();
         this.setupSidebarToggle();
         this.setupFrameworkRouteBar();
+        this.setupTerminal();
 
         // Inisialisasi Monaco Editor
         CodeEditor.init('monaco-editor-container', this.files[this.activeFile] ?? '', () => {
             this.runCode();
-        });
+        }, this.activeFile);
 
         // Inisialisasi Database Manager
         DbManager.init();
@@ -241,15 +666,6 @@ window.App = {
         if (formatBtn) {
             formatBtn.addEventListener('click', () => {
                 CodeEditor.formatCode();
-            });
-        }
-
-        // Clear Console Button
-        const clearConsoleBtn = document.getElementById('btn-clear-console');
-        if (clearConsoleBtn) {
-            clearConsoleBtn.addEventListener('click', () => {
-                const outEl = document.getElementById('console-output-content');
-                if (outEl) outEl.innerHTML = '<div class="text-gray-500 italic p-4 text-xs font-mono">Konsol kosong. Jalankan kode untuk melihat output.</div>';
             });
         }
 
@@ -296,7 +712,7 @@ window.App = {
         this.renderExplorer();
         this.renderOpenTabs();
 
-        CodeEditor.setCode(this.files[this.activeFile] ?? '');
+        CodeEditor.setCode(this.files[this.activeFile] ?? '', this.activeFile);
 
         // Jika pindah ke framework, otomatis buka tab HTML preview & jalankan
         if (mode === 'framework') {
@@ -306,7 +722,7 @@ window.App = {
             this.runCode();
         } else {
             if (window.innerWidth >= 768) {
-                this.switchTab('console');
+                this.switchTab('html');
             }
         }
     },
@@ -351,11 +767,33 @@ window.App = {
     setupFrameworkRouteBar: function () {
         const inputRoute = document.getElementById('framework-route-input');
         const btnVisit = document.getElementById('btn-visit-route');
+        const btnBack = document.getElementById('btn-route-back');
+        const btnForward = document.getElementById('btn-route-forward');
+
+        if (btnBack) {
+            btnBack.addEventListener('click', () => {
+                if (this.routeHistoryIndex > 0) {
+                    this.routeHistoryIndex--;
+                    const prevRoute = this.routeHistory[this.routeHistoryIndex];
+                    this.visitRoute(prevRoute, false);
+                }
+            });
+        }
+
+        if (btnForward) {
+            btnForward.addEventListener('click', () => {
+                if (this.routeHistoryIndex < this.routeHistory.length - 1) {
+                    this.routeHistoryIndex++;
+                    const nextRoute = this.routeHistory[this.routeHistoryIndex];
+                    this.visitRoute(nextRoute, false);
+                }
+            });
+        }
 
         if (btnVisit) {
             btnVisit.addEventListener('click', () => {
                 if (inputRoute) {
-                    this.visitRoute(inputRoute.value.trim() || '/');
+                    this.visitRoute(inputRoute.value.trim() || '/', true);
                 }
             });
         }
@@ -364,18 +802,49 @@ window.App = {
             inputRoute.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    this.visitRoute(inputRoute.value.trim() || '/');
+                    this.visitRoute(inputRoute.value.trim() || '/', true);
                 }
             });
         }
+
+        this.updateRouteNavButtons();
     },
 
-    visitRoute: function (route) {
+    updateRouteNavButtons: function () {
+        const btnBack = document.getElementById('btn-route-back');
+        const btnForward = document.getElementById('btn-route-forward');
+        if (btnBack) {
+            btnBack.disabled = this.routeHistoryIndex <= 0;
+        }
+        if (btnForward) {
+            btnForward.disabled = this.routeHistoryIndex >= this.routeHistory.length - 1;
+        }
+    },
+
+    visitRoute: function (route, pushHistory = true) {
         let cleanRoute = route.trim();
+        if (cleanRoute.startsWith('http://') || cleanRoute.startsWith('https://')) {
+            try {
+                const u = new URL(cleanRoute);
+                cleanRoute = u.pathname + (u.search || '');
+            } catch (e) {}
+        }
         if (!cleanRoute.startsWith('/')) {
             cleanRoute = '/' + cleanRoute;
         }
         this.frameworkRoute = cleanRoute;
+        this.pendingMethod = 'GET';
+        this.pendingPostData = {};
+
+        if (pushHistory) {
+            this.routeHistory = this.routeHistory.slice(0, this.routeHistoryIndex + 1);
+            if (this.routeHistory[this.routeHistory.length - 1] !== cleanRoute) {
+                this.routeHistory.push(cleanRoute);
+                this.routeHistoryIndex = this.routeHistory.length - 1;
+            }
+        }
+        this.updateRouteNavButtons();
+
         const inputRoute = document.getElementById('framework-route-input');
         if (inputRoute) {
             inputRoute.value = cleanRoute;
@@ -391,11 +860,70 @@ window.App = {
         this.runCode();
     },
 
-    resetCurrentMode: function () {
+    submitFormRoute: function (route, method = 'POST', postData = {}) {
+        let cleanRoute = route.trim();
+        if (cleanRoute.startsWith('http://') || cleanRoute.startsWith('https://')) {
+            try {
+                const u = new URL(cleanRoute);
+                cleanRoute = u.pathname + (u.search || '');
+            } catch (e) {}
+        }
+        if (!cleanRoute.startsWith('/')) {
+            cleanRoute = '/' + cleanRoute;
+        }
+        this.frameworkRoute = cleanRoute;
+        this.pendingMethod = method;
+        this.pendingPostData = postData;
+
+        this.routeHistory = this.routeHistory.slice(0, this.routeHistoryIndex + 1);
+        this.routeHistory.push(cleanRoute);
+        this.routeHistoryIndex = this.routeHistory.length - 1;
+        this.updateRouteNavButtons();
+
+        const inputRoute = document.getElementById('framework-route-input');
+        if (inputRoute) {
+            inputRoute.value = cleanRoute;
+        }
+
+        if (window.innerWidth < 768) {
+            this.setMobileView('html');
+        } else {
+            this.switchTab('html');
+        }
+
+        this.runCode();
+    },
+
+    resetCurrentMode: async function () {
+        if (this.currentUser) {
+            try {
+                this.setCloudSyncBadge('Mereset workspace...', 'sky');
+                const res = await fetch('/api/workspace/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: this.playgroundMode })
+                });
+                const data = await res.json();
+                if (data.success && data.files) {
+                    this.files = data.files;
+                    this.folders = data.folders || [];
+                    this.activeFile = data.active_file || Object.keys(data.files)[0];
+                    this.openTabs = data.open_tabs || [this.activeFile];
+
+                    this.renderExplorer();
+                    this.renderOpenTabs();
+                    CodeEditor.setCode(this.files[this.activeFile] ?? '', this.activeFile);
+                    this.setCloudSyncBadge(`Cloud: @${this.currentUser.username}`, 'emerald');
+                    return;
+                }
+            } catch (e) {}
+        }
+
+        // Fallback lokal jika belum login
         if (this.playgroundMode === 'framework') {
             this.files = JSON.parse(JSON.stringify(DEFAULT_FRAMEWORK_FILES));
             this.folders = [...DEFAULT_FRAMEWORK_FOLDERS];
-            this.openTabs = ['routes/web.php', 'app/Controllers/HomeController.php', 'resources/views/welcome.sakuci.php'];
+            this.openTabs = ['.env', 'routes/web.php', 'app/Controllers/MahasiswaController.php', 'app/Models/Mahasiswa.php', 'resources/views/mahasiswa/index.sakuci.php', 'resources/views/layouts/app.sakuci.php'];
             this.activeFile = 'routes/web.php';
         } else {
             this.files = JSON.parse(JSON.stringify(DEFAULT_NATIVE_FILES));
@@ -406,11 +934,11 @@ window.App = {
         this.saveFilesToStorage();
         this.renderExplorer();
         this.renderOpenTabs();
-        CodeEditor.setCode(this.files[this.activeFile] ?? '');
+        CodeEditor.setCode(this.files[this.activeFile] ?? '', this.activeFile);
     },
 
     // ==========================================
-    // PENYIMPANAN LOCALSTORAGE PER MODE
+    // PENYIMPANAN & SINKRONISASI BERKAS
     // ==========================================
     loadFilesFromStorage: function () {
         const prefix = this.playgroundMode === 'framework' ? 'sakuci_framework_' : 'sakuci_native_';
@@ -423,13 +951,52 @@ window.App = {
             if (savedFiles) {
                 const parsed = JSON.parse(savedFiles);
                 if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) {
-                    // Auto-fix kompatibilitas tipe deklarasi Model Sakuci
-                    if (parsed['app/Models/Mahasiswa.php']) {
-                        parsed['app/Models/Mahasiswa.php'] = parsed['app/Models/Mahasiswa.php'].replace('protected static string $table', 'protected static ?string $table');
+                    if (this.playgroundMode === 'framework') {
+                        // Sinkronisasi otomatis struktur berkas bawaan
+                        Object.keys(DEFAULT_FRAMEWORK_FILES).forEach(k => {
+                            if (!parsed[k]) {
+                                parsed[k] = DEFAULT_FRAMEWORK_FILES[k];
+                            }
+                        });
+                        // Pastikan layouts & views menggunakan Bootstrap CDN & @extends
+                        if (parsed['resources/views/layouts/app.sakuci.php'] && !parsed['resources/views/layouts/app.sakuci.php'].includes('bootstrap')) {
+                            parsed['resources/views/layouts/app.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/layouts/app.sakuci.php'];
+                        }
+                        if (parsed['resources/views/mahasiswa/index.sakuci.php'] && !parsed['resources/views/mahasiswa/index.sakuci.php'].includes('@extends')) {
+                            parsed['resources/views/mahasiswa/index.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/mahasiswa/index.sakuci.php'];
+                            parsed['resources/views/mahasiswa/create.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/mahasiswa/create.sakuci.php'];
+                            parsed['resources/views/mahasiswa/edit.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/mahasiswa/edit.sakuci.php'];
+                            parsed['resources/views/welcome.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/welcome.sakuci.php'];
+                            parsed['resources/views/partials/navbar.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/partials/navbar.sakuci.php'];
+                            parsed['resources/views/partials/flash.sakuci.php'] = DEFAULT_FRAMEWORK_FILES['resources/views/partials/flash.sakuci.php'];
+                        }
+                        if (parsed['resources/views/welcome.sakuci.php']) {
+                            parsed['resources/views/welcome.sakuci.php'] = parsed['resources/views/welcome.sakuci.php']
+                                .replace(/<code>@extends<\/code>/g, '<code>@@extends</code>')
+                                .replace(/<code>@section<\/code>/g, '<code>@@section</code>')
+                                .replace(/<code>@extends\('layouts\.app'\)<\/code>/g, '<code>@@extends(\'layouts.app\')</code>')
+                                .replace(/<code>@section\('content'\)<\/code>/g, '<code>@@section(\'content\')</code>');
+                        }
+                        if (parsed['config/database.php'] && !parsed['config/database.php'].includes('DB_SQLITE_PATH')) {
+                            parsed['config/database.php'] = DEFAULT_FRAMEWORK_FILES['config/database.php'];
+                        }
+                        if (!parsed['.env']) {
+                            parsed['.env'] = DEFAULT_FRAMEWORK_FILES['.env'];
+                        }
                     }
+
                     this.files = parsed;
-                    this.folders = savedFolders ? JSON.parse(savedFolders) : [];
+                    let loadedFolders = savedFolders ? JSON.parse(savedFolders) : [];
+                    if (this.playgroundMode === 'framework') {
+                        DEFAULT_FRAMEWORK_FOLDERS.forEach(df => {
+                            if (!loadedFolders.includes(df)) loadedFolders.push(df);
+                        });
+                    }
+                    this.folders = loadedFolders;
                     this.openTabs = savedTabs ? JSON.parse(savedTabs) : Object.keys(this.files);
+                    if (this.playgroundMode === 'framework' && !this.openTabs.includes('app/Controllers/MahasiswaController.php')) {
+                        this.openTabs.push('app/Controllers/MahasiswaController.php');
+                    }
                     this.activeFile = (savedActive && this.files[savedActive] !== undefined) 
                         ? savedActive 
                         : Object.keys(this.files)[0];
@@ -442,7 +1009,7 @@ window.App = {
         if (this.playgroundMode === 'framework') {
             this.files = JSON.parse(JSON.stringify(DEFAULT_FRAMEWORK_FILES));
             this.folders = [...DEFAULT_FRAMEWORK_FOLDERS];
-            this.openTabs = ['routes/web.php', 'app/Controllers/HomeController.php', 'resources/views/welcome.sakuci.php'];
+            this.openTabs = ['routes/web.php', 'app/Controllers/MahasiswaController.php', 'app/Models/Mahasiswa.php', 'resources/views/mahasiswa/index.sakuci.php', 'resources/views/layouts/app.sakuci.php'];
             this.activeFile = 'routes/web.php';
         } else {
             this.files = JSON.parse(JSON.stringify(DEFAULT_NATIVE_FILES));
@@ -452,7 +1019,7 @@ window.App = {
         }
     },
 
-    saveFilesToStorage: function () {
+    saveFilesToStorage: async function (silent = false) {
         const prefix = this.playgroundMode === 'framework' ? 'sakuci_framework_' : 'sakuci_native_';
         try {
             if (this.activeFile && this.files[this.activeFile] !== undefined) {
@@ -465,7 +1032,341 @@ window.App = {
             localStorage.setItem(prefix + 'folders', JSON.stringify(this.folders));
             localStorage.setItem(prefix + 'open_tabs', JSON.stringify(this.openTabs));
             localStorage.setItem(prefix + 'active_file', this.activeFile);
-        } catch (e) {}
+
+            // Simpan ke cloud jika user sedang login
+            if (this.currentUser) {
+                this.setCloudSyncBadge('Menyimpan ke Cloud...', 'sky');
+                const res = await fetch('/api/workspace/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: this.playgroundMode,
+                        files: this.files,
+                        active_file: this.activeFile,
+                        open_tabs: this.openTabs
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.setCloudSyncBadge(`Cloud: @${this.currentUser.username}`, 'emerald');
+                } else {
+                    this.setCloudSyncBadge('Gagal simpan cloud', 'amber');
+                }
+            } else {
+                this.setCloudSyncBadge('Tersimpan di Browser', 'emerald');
+            }
+        } catch (e) {
+            this.setCloudSyncBadge('Tersimpan di Browser', 'emerald');
+        }
+    },
+
+    onCodeChange: function () {
+        if (!this.activeFile || this.files[this.activeFile] === undefined) return;
+        const currentCode = CodeEditor.getCode();
+        if (currentCode === null) return;
+        this.files[this.activeFile] = currentCode;
+
+        this.setCloudSyncBadge('Menyimpan...', 'sky');
+
+        if (this.autoSaveTimer) {
+            clearTimeout(this.autoSaveTimer);
+        }
+        this.autoSaveTimer = setTimeout(() => {
+            this.saveFilesToStorage(true);
+        }, 1200);
+    },
+
+    // ==========================================
+    // AUTENTIKASI PENGGUNA & CLOUD WORKSPACE
+    // ==========================================
+    setupAuth: function () {
+        const btnOpenModal = document.getElementById('btn-open-auth-modal');
+        const btnCloseModal = document.getElementById('btn-close-auth-modal');
+        const modal = document.getElementById('auth-modal');
+        const tabLogin = document.getElementById('auth-tab-btn-login');
+        const tabRegister = document.getElementById('auth-tab-btn-register');
+        const formLogin = document.getElementById('form-auth-login');
+        const formRegister = document.getElementById('form-auth-register');
+        const linkSwitchRegister = document.getElementById('link-switch-to-register');
+        const linkSwitchLogin = document.getElementById('link-switch-to-login');
+        const btnUserProfileMenu = document.getElementById('btn-user-profile-menu');
+        const userDropdown = document.getElementById('user-profile-dropdown');
+        const btnLogout = document.getElementById('btn-menu-logout');
+        const btnResetWorkspace = document.getElementById('btn-menu-reset-workspace');
+        const btnManualSave = document.getElementById('btn-menu-save');
+
+        if (btnOpenModal) {
+            btnOpenModal.addEventListener('click', () => this.showAuthModal('login'));
+        }
+        if (btnCloseModal) {
+            btnCloseModal.addEventListener('click', () => this.closeAuthModal());
+        }
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) this.closeAuthModal();
+            });
+        }
+
+        const switchToLogin = () => {
+            if (tabLogin) tabLogin.className = 'flex-1 py-2.5 text-center text-sky-400 border-b-2 border-sky-500 bg-[#161b22]/50 transition';
+            if (tabRegister) tabRegister.className = 'flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200 border-b-2 border-transparent transition';
+            if (formLogin) formLogin.classList.remove('hidden');
+            if (formRegister) formRegister.classList.add('hidden');
+        };
+
+        const switchToRegister = () => {
+            if (tabRegister) tabRegister.className = 'flex-1 py-2.5 text-center text-emerald-400 border-b-2 border-emerald-500 bg-[#161b22]/50 transition';
+            if (tabLogin) tabLogin.className = 'flex-1 py-2.5 text-center text-gray-400 hover:text-gray-200 border-b-2 border-transparent transition';
+            if (formRegister) formRegister.classList.remove('hidden');
+            if (formLogin) formLogin.classList.add('hidden');
+        };
+
+        if (tabLogin) tabLogin.addEventListener('click', switchToLogin);
+        if (tabRegister) tabRegister.addEventListener('click', switchToRegister);
+        if (linkSwitchRegister) linkSwitchRegister.addEventListener('click', (e) => { e.preventDefault(); switchToRegister(); });
+        if (linkSwitchLogin) linkSwitchLogin.addEventListener('click', (e) => { e.preventDefault(); switchToLogin(); });
+
+        // Dropdown toggle
+        if (btnUserProfileMenu && userDropdown) {
+            btnUserProfileMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+                userDropdown.classList.toggle('hidden');
+            });
+            document.addEventListener('click', () => {
+                userDropdown.classList.add('hidden');
+            });
+        }
+
+        // Form Login Submit
+        if (formLogin) {
+            formLogin.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const errBox = document.getElementById('auth-login-error');
+                const submitBtn = document.getElementById('btn-submit-login');
+                const loginVal = document.getElementById('auth-login-input')?.value?.trim();
+                const passVal = document.getElementById('auth-login-password')?.value;
+
+                if (errBox) errBox.classList.add('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `<span>Memproses...</span>`;
+                }
+
+                try {
+                    const res = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ login: loginVal, password: passVal })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.currentUser = data.user;
+                        this.updateAuthUI();
+                        this.closeAuthModal();
+                        await this.syncWorkspaceFromCloud();
+                        this.setCloudSyncBadge(`Cloud: @${this.currentUser.username}`, 'emerald');
+                    } else {
+                        if (errBox) {
+                            errBox.textContent = data.error || 'Login gagal. Periksa username dan password Anda.';
+                            errBox.classList.remove('hidden');
+                        }
+                    }
+                } catch (err) {
+                    if (errBox) {
+                        errBox.textContent = 'Gagal menghubungi server: ' + err.message;
+                        errBox.classList.remove('hidden');
+                    }
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = `<span>Masuk ke Workspace</span><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>`;
+                    }
+                }
+            });
+        }
+
+        // Form Register Submit
+        if (formRegister) {
+            formRegister.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const errBox = document.getElementById('auth-register-error');
+                const submitBtn = document.getElementById('btn-submit-register');
+                const nameVal = document.getElementById('auth-reg-name')?.value?.trim();
+                const usernameVal = document.getElementById('auth-reg-username')?.value?.trim();
+                const emailVal = document.getElementById('auth-reg-email')?.value?.trim();
+                const passVal = document.getElementById('auth-reg-password')?.value;
+
+                if (errBox) errBox.classList.add('hidden');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = `<span>Membuat Akun...</span>`;
+                }
+
+                try {
+                    const res = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nameVal, username: usernameVal, email: emailVal, password: passVal })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        this.currentUser = data.user;
+                        this.updateAuthUI();
+                        this.closeAuthModal();
+                        await this.syncWorkspaceFromCloud();
+                        this.setCloudSyncBadge(`Cloud: @${this.currentUser.username}`, 'emerald');
+                    } else {
+                        if (errBox) {
+                            errBox.textContent = data.error || 'Pendaftaran gagal.';
+                            errBox.classList.remove('hidden');
+                        }
+                    }
+                } catch (err) {
+                    if (errBox) {
+                        errBox.textContent = 'Gagal menghubungi server: ' + err.message;
+                        errBox.classList.remove('hidden');
+                    }
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = `<span>Daftar & Mulai Belajar</span><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+                    }
+                }
+            });
+        }
+
+        // Logout
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                if (confirm('Apakah Anda yakin ingin keluar dari akun Anda?')) {
+                    try {
+                        await fetch('/api/auth/logout', { method: 'POST' });
+                    } catch (e) {}
+                    this.currentUser = null;
+                    this.updateAuthUI();
+                    this.loadFilesFromStorage();
+                    this.renderExplorer();
+                    this.renderOpenTabs();
+                    CodeEditor.setCode(this.files[this.activeFile] ?? '', this.activeFile);
+                }
+            });
+        }
+
+        // Reset Workspace
+        if (btnResetWorkspace) {
+            btnResetWorkspace.addEventListener('click', () => {
+                if (confirm(`Kembalikan seluruh berkas mode ${this.playgroundMode === 'framework' ? 'Sakuci Framework' : 'PHP Murni'} ke kondisi awal?`)) {
+                    this.resetCurrentMode();
+                }
+            });
+        }
+
+        // Manual Save
+        if (btnManualSave) {
+            btnManualSave.addEventListener('click', () => {
+                this.saveFilesToStorage();
+            });
+        }
+
+        // Cek status sesi saat memuat halaman
+        this.checkAuth();
+    },
+
+    checkAuth: async function () {
+        try {
+            const res = await fetch('/api/auth/me');
+            const data = await res.json();
+            if (data.success && data.authenticated && data.user) {
+                this.currentUser = data.user;
+                this.updateAuthUI();
+                await this.syncWorkspaceFromCloud();
+            } else {
+                this.currentUser = null;
+                this.updateAuthUI();
+            }
+        } catch (e) {
+            this.currentUser = null;
+            this.updateAuthUI();
+        }
+    },
+
+    updateAuthUI: function () {
+        const btnOpenModal = document.getElementById('btn-open-auth-modal');
+        const userWidget = document.getElementById('user-profile-widget');
+        const userNameLabel = document.getElementById('user-name-label');
+        const userAvatarBadge = document.getElementById('user-avatar-badge');
+        const dropdownName = document.getElementById('dropdown-name');
+        const dropdownUsername = document.getElementById('dropdown-username');
+
+        if (this.currentUser) {
+            if (btnOpenModal) btnOpenModal.classList.add('hidden');
+            if (userWidget) userWidget.classList.remove('hidden');
+
+            const name = this.currentUser.name || 'User';
+            const initial = name.charAt(0).toUpperCase() || 'U';
+
+            if (userNameLabel) userNameLabel.textContent = name;
+            if (userAvatarBadge) userAvatarBadge.textContent = initial;
+            if (dropdownName) dropdownName.textContent = name;
+            if (dropdownUsername) dropdownUsername.textContent = `@${this.currentUser.username}`;
+
+            this.setCloudSyncBadge(`Cloud: @${this.currentUser.username}`, 'emerald');
+        } else {
+            if (btnOpenModal) btnOpenModal.classList.remove('hidden');
+            if (userWidget) userWidget.classList.add('hidden');
+
+            this.setCloudSyncBadge('Tamu (Belum Login)', 'amber');
+        }
+    },
+
+    showAuthModal: function (tab = 'login') {
+        const modal = document.getElementById('auth-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+
+        if (tab === 'register') {
+            document.getElementById('auth-tab-btn-register')?.click();
+        } else {
+            document.getElementById('auth-tab-btn-login')?.click();
+        }
+    },
+
+    closeAuthModal: function () {
+        const modal = document.getElementById('auth-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    setCloudSyncBadge: function (text, color = 'emerald') {
+        const badge = document.getElementById('cloud-sync-status');
+        const textEl = document.getElementById('cloud-sync-text');
+        if (!badge || !textEl) return;
+
+        textEl.textContent = text;
+        const dot = badge.querySelector('span:first-child');
+        if (dot) {
+            dot.className = `inline-block w-1.5 h-1.5 rounded-full ${color === 'emerald' ? 'bg-emerald-400' : (color === 'amber' ? 'bg-amber-400' : 'bg-sky-400')}`;
+        }
+    },
+
+    syncWorkspaceFromCloud: async function () {
+        try {
+            this.setCloudSyncBadge('Memuat berkas cloud...', 'sky');
+            const res = await fetch(`/api/workspace/files?mode=${this.playgroundMode}`);
+            const data = await res.json();
+            if (data.success && data.files) {
+                this.files = data.files;
+                this.folders = data.folders || [];
+                this.activeFile = data.active_file || Object.keys(data.files)[0] || 'index.php';
+                this.openTabs = data.open_tabs || [this.activeFile];
+
+                this.renderExplorer();
+                this.renderOpenTabs();
+                CodeEditor.setCode(this.files[this.activeFile] ?? '', this.activeFile);
+                this.setCloudSyncBadge(this.currentUser ? `Cloud: @${this.currentUser.username}` : 'Tersimpan', 'emerald');
+            }
+        } catch (e) {
+            this.setCloudSyncBadge('Mode Offline', 'amber');
+        }
     },
 
     // ==========================================
@@ -572,7 +1473,8 @@ window.App = {
             const indent = level * 14;
 
             if (item.isFolder) {
-                const isExpanded = this.expandedFolders[item.path] !== false;
+                // Folder default tertutup/collapse (sembunyikan isi file), kecuali jika diklik pengguna
+                const isExpanded = Boolean(this.expandedFolders[item.path]);
                 return `
                     <div>
                         <div class="tree-item flex items-center justify-between py-1 px-1.5 rounded text-xs text-gray-300 group cursor-pointer"
@@ -631,7 +1533,7 @@ window.App = {
     },
 
     toggleFolder: function (path) {
-        this.expandedFolders[path] = this.expandedFolders[path] === false ? true : false;
+        this.expandedFolders[path] = !this.expandedFolders[path];
         this.renderExplorer();
     },
 
@@ -684,7 +1586,7 @@ window.App = {
         }
 
         this.activeFile = path;
-        CodeEditor.setCode(this.files[path] ?? '');
+        CodeEditor.setCode(this.files[path] ?? '', path);
         this.renderExplorer();
         this.renderOpenTabs();
         this.saveFilesToStorage();
@@ -916,7 +1818,7 @@ window.App = {
     // RESPONSIVE & MOBILE NAVIGATION
     // ==========================================
     setupMobileNav: function () {
-        const views = ['files', 'editor', 'console', 'html', 'db'];
+        const views = ['files', 'editor', 'terminal', 'html', 'db'];
         views.forEach(view => {
             const btn = document.getElementById(`mobile-nav-${view}`);
             if (btn) {
@@ -951,7 +1853,7 @@ window.App = {
             document.body.classList.add('mobile-view-other');
         }
 
-        const views = ['files', 'editor', 'console', 'html', 'db'];
+        const views = ['files', 'editor', 'terminal', 'html', 'db'];
         views.forEach(v => {
             const btn = document.getElementById(`mobile-nav-${v}`);
             if (btn) {
@@ -968,7 +1870,7 @@ window.App = {
     // RIGHT PANEL DESKTOP TABS
     // ==========================================
     setupTabs: function () {
-        const tabs = ['console', 'html', 'db'];
+        const tabs = ['terminal', 'html', 'db'];
         tabs.forEach(tab => {
             const btn = document.getElementById(`tab-btn-${tab}`);
             if (btn) {
@@ -979,7 +1881,7 @@ window.App = {
 
     switchTab: function (tabName) {
         this.activeTab = tabName;
-        const tabs = ['console', 'html', 'db'];
+        const tabs = ['terminal', 'html', 'db'];
 
         tabs.forEach(t => {
             const btn = document.getElementById(`tab-btn-${t}`);
@@ -997,7 +1899,160 @@ window.App = {
 
         if (tabName === 'db') {
             DbManager.loadTables();
+        } else if (tabName === 'terminal') {
+            const termInput = document.getElementById('terminal-input');
+            if (termInput) termInput.focus();
         }
+    },
+
+    // ==========================================
+    // INTERACTIVE SAKUCI TERMINAL CLI
+    // ==========================================
+    setupTerminal: function () {
+        const input = document.getElementById('terminal-input');
+        if (!input) return;
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.submitTerminalInput();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (this.terminalHistory.length > 0) {
+                    if (this.historyIndex === -1) {
+                        this.historyIndex = this.terminalHistory.length - 1;
+                    } else if (this.historyIndex > 0) {
+                        this.historyIndex--;
+                    }
+                    input.value = this.terminalHistory[this.historyIndex] || '';
+                }
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (this.terminalHistory.length > 0 && this.historyIndex !== -1) {
+                    if (this.historyIndex < this.terminalHistory.length - 1) {
+                        this.historyIndex++;
+                        input.value = this.terminalHistory[this.historyIndex] || '';
+                    } else {
+                        this.historyIndex = -1;
+                        input.value = '';
+                    }
+                }
+            }
+        });
+    },
+
+    submitTerminalInput: function () {
+        const input = document.getElementById('terminal-input');
+        if (!input) return;
+        const cmd = input.value.trim();
+        input.value = '';
+        this.historyIndex = -1;
+        if (!cmd) return;
+
+        this.terminalHistory.push(cmd);
+        this.runTerminalCommand(cmd);
+    },
+
+    runTerminalCommand: async function (command) {
+        if (!command) return;
+
+        this.appendTerminalLine(`sakuci@cli:~$ ${command}`, 'prompt');
+
+        if (command.trim() === 'clear' || command.trim() === 'cls') {
+            this.clearTerminal();
+            return;
+        }
+
+        // Pindah ke tab terminal jika sedang di tab lain
+        if (window.innerWidth < 768) {
+            this.setMobileView('terminal');
+        } else {
+            this.switchTab('terminal');
+        }
+
+        try {
+            const res = await fetch('/api/cli', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    command: command,
+                    files: this.files,
+                    mode: this.playgroundMode
+                })
+            });
+
+            const result = await res.json();
+
+            if (result.action === 'clear') {
+                this.clearTerminal();
+                return;
+            }
+
+            if (result.stdout) {
+                this.appendTerminalLine(result.stdout, 'stdout');
+            }
+
+            if (result.stderr) {
+                this.appendTerminalLine(result.stderr, 'stderr');
+            }
+
+            // Jika ada file baru yang dibuat (make:model, make:controller, make:view)
+            if (result.created_files && typeof result.created_files === 'object') {
+                Object.keys(result.created_files).forEach(fPath => {
+                    this.files[fPath] = result.created_files[fPath];
+                    // Daftarkan folder induk jika belum ada
+                    const parts = fPath.split('/');
+                    parts.pop();
+                    let curDir = '';
+                    parts.forEach(p => {
+                        curDir = curDir ? `${curDir}/${p}` : p;
+                        if (!this.folders.includes(curDir)) {
+                            this.folders.push(curDir);
+                        }
+                    });
+                });
+
+                this.renderExplorer();
+                this.saveFilesToStorage();
+
+                if (result.active_file && this.files[result.active_file] !== undefined) {
+                    this.openFile(result.active_file);
+                }
+            }
+        } catch (err) {
+            this.appendTerminalLine(`Terminal Error: ${err.message}`, 'stderr');
+        }
+    },
+
+    appendTerminalLine: function (text, type = 'stdout') {
+        const screen = document.getElementById('terminal-screen');
+        if (!screen) return;
+
+        const line = document.createElement('div');
+        line.className = 'font-mono text-xs whitespace-pre-wrap select-text leading-relaxed';
+
+        if (type === 'prompt') {
+            line.className += ' text-emerald-400 font-semibold mt-2.5';
+            line.textContent = text;
+        } else if (type === 'stderr') {
+            line.className += ' text-rose-400 bg-rose-950/20 p-2 rounded border border-rose-900/40 my-1';
+            line.textContent = text;
+        } else {
+            line.className += ' text-slate-200';
+            line.textContent = text;
+        }
+
+        screen.appendChild(line);
+        screen.scrollTop = screen.scrollHeight;
+    },
+
+    clearTerminal: function () {
+        const screen = document.getElementById('terminal-screen');
+        if (!screen) return;
+        screen.innerHTML = `
+            <div class="text-sky-400/90 font-mono text-xs mb-2">⚡ Sakuci Framework Interactive Terminal CLI</div>
+            <div class="text-slate-400 text-xs font-mono">Ketik perintah seperti <code class="text-sky-300">php sakuci make:model Produk</code>, <code class="text-sky-300">php sakuci route:list</code>, <code class="text-sky-300">php sakuci migrate</code>, atau <code class="text-sky-300">help</code>.</div>
+        `;
     },
 
     // ==========================================
@@ -1015,7 +2070,6 @@ window.App = {
         this.saveFilesToStorage();
 
         const runBtn = document.getElementById('btn-run-code');
-        const consoleEl = document.getElementById('console-output-content');
         const executionBadge = document.getElementById('metric-exec-time');
         const statusBadge = document.getElementById('metric-status');
 
@@ -1031,20 +2085,21 @@ window.App = {
             `;
         }
 
+        const methodToSend = this.pendingMethod || 'GET';
+        const postToSend = this.pendingPostData || {};
+        this.pendingMethod = null;
+        this.pendingPostData = null;
+
         if (window.innerWidth < 768) {
             if (this.playgroundMode === 'framework') {
                 this.setMobileView('html');
             } else {
-                this.setMobileView('console');
+                this.setMobileView('terminal');
             }
         } else {
-            if (this.playgroundMode === 'framework' && this.activeTab !== 'console') {
+            if (this.playgroundMode === 'framework' && this.activeTab !== 'terminal') {
                 this.switchTab('html');
             }
-        }
-
-        if (consoleEl) {
-            consoleEl.innerHTML = `<div class="text-xs text-sky-400 p-4 font-mono animate-pulse">⚡ Menjalankan mode ${this.playgroundMode === 'framework' ? 'Sakuci Framework (' + this.frameworkRoute + ')' : 'PHP Murni'}...</div>`;
         }
 
         try {
@@ -1054,7 +2109,8 @@ window.App = {
                 body: JSON.stringify({
                     mode: this.playgroundMode,
                     route_uri: this.frameworkRoute,
-                    http_method: 'GET',
+                    http_method: methodToSend,
+                    post_data: postToSend,
                     files: this.files,
                     entrypoint: this.playgroundMode === 'framework' ? 'public/index.php' : 'index.php'
                 })
@@ -1075,16 +2131,39 @@ window.App = {
                 }
             }
 
-            this.renderConsoleOutput(result);
+            // Tampilkan log ringkasan di terminal
+            const targetUri = this.playgroundMode === 'framework' ? this.frameworkRoute : 'index.php';
+            if (result.success) {
+                this.appendTerminalLine(`⚡ [HTTP ${methodToSend}] ${targetUri} -> 200 OK (${result.execution_time_ms} ms)`, 'prompt');
+            } else {
+                this.appendTerminalLine(`⚠️ [HTTP ${methodToSend}] ${targetUri} -> Exit ${result.exit_code} (${result.execution_time_ms} ms)`, 'stderr');
+            }
+
+            if (result.route && this.playgroundMode === 'framework' && result.route !== this.frameworkRoute) {
+                this.frameworkRoute = result.route;
+                const inputRoute = document.getElementById('framework-route-input');
+                if (inputRoute) {
+                    inputRoute.value = result.route;
+                }
+                if (this.routeHistory[this.routeHistory.length - 1] !== result.route) {
+                    this.routeHistory.push(result.route);
+                    this.routeHistoryIndex = this.routeHistory.length - 1;
+                    this.updateRouteNavButtons();
+                }
+            }
+
+            if (result.stderr) {
+                this.appendTerminalLine(result.stderr, 'stderr');
+            }
+
+            if (result.stdout && this.playgroundMode === 'native') {
+                this.appendTerminalLine(result.stdout, 'stdout');
+            }
+
             this.updateHtmlPreview(result.stdout);
 
         } catch (err) {
-            if (consoleEl) {
-                consoleEl.innerHTML = `
-                    <div class="p-4 bg-red-950/50 border border-red-800 text-red-300 text-xs font-mono rounded">
-                        <strong>Network Error:</strong> ${err.message}
-                    </div>`;
-            }
+            this.appendTerminalLine(`Network Error: ${err.message}`, 'stderr');
         } finally {
             this.isRunning = false;
             if (runBtn) {
@@ -1146,10 +2225,41 @@ window.App = {
         const iframe = document.getElementById('html-preview-frame');
         if (!iframe) return;
 
+        // Jika respons adalah redirect yang belum sempat di-follow runner
+        const redirMatch = rawHtml && rawHtml.match(/<!--\s*SAKUCI_REDIRECT:\s*(.*?)\s*-->/);
+        if (redirMatch && redirMatch[1]) {
+            this.visitRoute(redirMatch[1]);
+            return;
+        }
+
         const doc = iframe.contentDocument || iframe.contentWindow.document;
         doc.open();
         doc.write(rawHtml || '<p style="color: #94a3b8; font-style: italic; padding: 16px; font-family: sans-serif;">Tidak ada konten HTML untuk ditampilkan.</p>');
         doc.close();
+
+        // Intercept link clicks & form submits inside simulated iframe
+        try {
+            doc.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (!link) return;
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+                e.preventDefault();
+                App.visitRoute(href);
+            });
+
+            doc.addEventListener('submit', (e) => {
+                const form = e.target;
+                if (!form) return;
+                e.preventDefault();
+                const action = form.getAttribute('action') || App.frameworkRoute;
+                const method = (form.getAttribute('method') || 'GET').toUpperCase();
+                const formData = new FormData(form);
+                const postData = {};
+                formData.forEach((val, key) => { postData[key] = val; });
+                App.submitFormRoute(action, method, postData);
+            });
+        } catch (e) {}
     },
 
     setupSplitPane: function () {
@@ -1161,39 +2271,133 @@ window.App = {
         if (!resizer || !leftCol || !rightCol || !container) return;
 
         let isDragging = false;
+        let activePointerId = null;
+        let rafId = null;
 
-        resizer.addEventListener('mousedown', () => {
+        const applySplit = (percentage) => {
+            leftCol.style.width = `${percentage}%`;
+            leftCol.style.flex = `0 0 ${percentage}%`;
+            rightCol.style.width = `calc(${100 - percentage}% - 6px)`;
+            rightCol.style.flex = '1 1 0%';
+        };
+
+        // Muat rasio split yang tersimpan sebelumnya (jika ada)
+        try {
+            const savedRatio = localStorage.getItem('sakuci_split_ratio');
+            if (savedRatio && window.innerWidth >= 768) {
+                const parsed = parseFloat(savedRatio);
+                if (!isNaN(parsed) && parsed >= 20 && parsed <= 80) {
+                    applySplit(parsed);
+                }
+            }
+        } catch (e) {}
+
+        const startDragging = (e) => {
             if (window.innerWidth < 768) return;
+            // Hanya tanggapi klik kiri (button 0)
+            if (e.button !== undefined && e.button !== 0) return;
+
             isDragging = true;
             resizer.classList.add('is-dragging');
-            document.body.style.cursor = 'col-resize';
-            document.body.style.userSelect = 'none';
-        });
+            document.body.classList.add('is-resizing-split');
 
-        document.addEventListener('mousemove', (e) => {
+            if (e.pointerId !== undefined && resizer.setPointerCapture) {
+                activePointerId = e.pointerId;
+                try {
+                    resizer.setPointerCapture(e.pointerId);
+                } catch (err) {}
+            }
+
+            e.preventDefault();
+        };
+
+        const onMove = (e) => {
             if (!isDragging || window.innerWidth < 768) return;
+
+            // Pengaman utama: jika tombol mouse kiri sudah tidak ditekan (mouseup hilang/di luar window), hentikan drag segera
+            if (e.buttons !== undefined && (e.buttons & 1) === 0) {
+                stopDragging(e);
+                return;
+            }
+
             const containerRect = container.getBoundingClientRect();
             const offset = e.clientX - containerRect.left;
             const containerWidth = containerRect.width;
 
-            const minWidth = 300;
-            const maxWidth = containerWidth - 300;
+            if (containerWidth <= 0) return;
 
-            if (offset >= minWidth && offset <= maxWidth) {
-                const percentage = (offset / containerWidth) * 100;
-                leftCol.style.width = `${percentage}%`;
-                rightCol.style.width = `${100 - percentage}%`;
-            }
-        });
+            // Batas minimal & maksimal yang nyaman dan proporsional
+            const minWidth = Math.min(260, containerWidth * 0.2);
+            const maxWidth = Math.max(containerWidth - 260, containerWidth * 0.8);
 
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                resizer.classList.remove('is-dragging');
-                document.body.style.cursor = 'default';
-                document.body.style.userSelect = 'auto';
-                CodeEditor.layout();
+            // Clamp offset agar mulus saat kursor keluar batas (tidak macet atau mendadak berhenti)
+            const clampedOffset = Math.max(minWidth, Math.min(offset, maxWidth));
+            const percentage = (clampedOffset / containerWidth) * 100;
+
+            if (!rafId) {
+                rafId = requestAnimationFrame(() => {
+                    applySplit(percentage);
+                    rafId = null;
+                });
             }
+        };
+
+        const stopDragging = (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (rafId) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+
+            resizer.classList.remove('is-dragging');
+            document.body.classList.remove('is-resizing-split');
+
+            if (activePointerId !== null && resizer.releasePointerCapture) {
+                try {
+                    resizer.releasePointerCapture(activePointerId);
+                } catch (err) {}
+                activePointerId = null;
+            }
+
+            // Simpan rasio split aktif ke localStorage
+            try {
+                const containerRect = container.getBoundingClientRect();
+                const leftRect = leftCol.getBoundingClientRect();
+                if (containerRect.width > 0) {
+                    const finalPercentage = (leftRect.width / containerRect.width) * 100;
+                    localStorage.setItem('sakuci_split_ratio', finalPercentage.toFixed(2));
+                }
+            } catch (err) {}
+
+            CodeEditor.layout();
+        };
+
+        // Pointer Events (didukung semua browser modern, mengisolasi event dari iframe)
+        if (window.PointerEvent) {
+            resizer.addEventListener('pointerdown', startDragging);
+            window.addEventListener('pointermove', onMove, { passive: false });
+            window.addEventListener('pointerup', stopDragging);
+            window.addEventListener('pointercancel', stopDragging);
+        } else {
+            // Fallback Mouse Events
+            resizer.addEventListener('mousedown', startDragging);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', stopDragging);
+        }
+
+        // Pengaman ekstra jika window kehilangan fokus
+        window.addEventListener('blur', () => stopDragging());
+
+        // Double click pada resizer untuk mereset posisi kembali ke tengah 50:50
+        resizer.addEventListener('dblclick', () => {
+            if (window.innerWidth < 768) return;
+            applySplit(50);
+            try {
+                localStorage.removeItem('sakuci_split_ratio');
+            } catch (e) {}
+            CodeEditor.layout();
         });
     },
 
