@@ -5,10 +5,10 @@ Panduan ini menuntun Anda mengunggah dan menjalankan **Sakuci PHP & MySQL Ground
 ---
 
 ## Persyaratan Server (aaPanel)
-1. **Nginx** (atau Apache)
-2. **PHP 8.1 / 8.2 / 8.3**
-3. **MySQL / MariaDB** (5.7 / 8.0)
-4. Ekstensi PHP yang wajib diaktifkan di aaPanel:
+1. **Web Server**: **Nginx** ATAU **Apache**
+2. **PHP**: **8.1**, **8.2**, atau **8.3**
+3. **MySQL / MariaDB**: (5.7 / 8.0)
+4. Ekstensi PHP wajib aktif di aaPanel:
    - `pdo_mysql`
    - `pdo_sqlite` (opsional untuk fallback)
    - `fileinfo`
@@ -28,12 +28,14 @@ Panduan ini menuntun Anda mengunggah dan menjalankan **Sakuci PHP & MySQL Ground
 
 ---
 
-### 2. Upload File Proyek
+### 2. Upload File Proyek & Atur Permission
 1. Buka menu **Files** di aaPanel, navigasikan ke folder website:
    `/www/wwwroot/domainanda.com/`
-2. Hapus file bawaan aaPanel (`index.html`, `404.html`).
+2. Hapus file bawaan aaPanel jika ada (`index.html`, `404.html`).
 3. Upload seluruh file proyek ini (bisa zip lalu ekstrak di aaPanel).
-4. Pastikan kepemilikan permission folder `www:www` (755).
+4. **Penting (Permission):** 
+   - Pilih semua file di `/www/wwwroot/domainanda.com/` -> klik **Permission**.
+   - Set Owner: `www`, Group: `www`, Permission: `755` (dan centang *Apply to subdirectories*).
 
 ---
 
@@ -55,37 +57,59 @@ Panduan ini menuntun Anda mengunggah dan menjalankan **Sakuci PHP & MySQL Ground
    DB_PASSWORD=password_database_anda
    ```
 3. Simpan file `.env`.
-4. *Catatan:* Skema tabel (`users`, `user_sessions`, `user_files`, `mahasiswa`, dll) **otomatis dibuat oleh sistem** saat website pertama kali dibuka. Namun jika ingin import manual lewat phpMyAdmin, file SQL tersedia di `data/schema.sql`.
+4. *Catatan:* Skema tabel (`users`, `user_sessions`, `user_files`, `mahasiswa`, dll) **otomatis dibuat oleh sistem** saat website pertama kali dibuka. Jika ingin import manual lewat phpMyAdmin, file SQL tersedia di `data/schema.sql`.
 
 ---
 
-### 4. Konfigurasi Nginx (URL Rewrite)
-1. Di menu **Website** aaPanel, klik website Anda -> buka menu **URL rewrite**.
-2. Salin dan tempel aturan dari [nginx.aapanel.conf](nginx.aapanel.conf):
+### 4. Konfigurasi URL Rewrite (Sesuai Web Server Anda)
+
+> [!WARNING]
+> Jika Anda mendapatkan error `500 Internal Server Error (Please contact the server administrator at webmaster@example.com)`, hal ini terjadi karena server Anda menggunakan **Apache** dan Anda menempelkan kode konfigurasi Nginx ke dalamnya! Gunakan pilihan sesuai webserver yang terinstall di aaPanel Anda:
+
+#### Pilihan A: Jika Menggunakan APACHE (LAMP)
+Jika web server Anda Apache, **JANGAN** menempelkan script `location { ... }` Nginx.
+Cukup gunakan file [`.htaccess`](.htaccess) yang sudah disertakan:
+1. Buka menu **Website** di aaPanel -> klik domain Anda -> menu **URL rewrite**.
+2. Pilih template rewrite atau tempel aturan Apache berikut:
+   ```apache
+   <IfModule mod_rewrite.c>
+       RewriteEngine On
+       RewriteBase /
+
+       # Keamanan
+       RewriteRule ^(\.env|\.git|.*\.sqlite|.*\.sql) - [F,L]
+
+       # File statis (CSS, JS, Fonts)
+       RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+       RewriteRule ^(.*)$ public/$1 [L]
+
+       # Request ke router / index
+       RewriteCond %{REQUEST_FILENAME} !-f
+       RewriteCond %{REQUEST_FILENAME} !-d
+       RewriteRule ^ index.php [QSA,L]
+   </IfModule>
+   DirectoryIndex index.php index.html
+   ```
+3. Klik **Save**.
+
+#### Pilihan B: Jika Menggunakan NGINX (LNMP)
+1. Di menu **Website** aaPanel -> klik domain Anda -> buka menu **URL rewrite**.
+2. Tempel aturan Nginx dari [nginx.aapanel.conf](nginx.aapanel.conf):
    ```nginx
-   location ^~ /api/ {
-       try_files $uri $uri/ /router.php?$query_string;
-   }
-
-   location ~* \.(css|js|json|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
-       root /www/wwwroot/DOMAIN_ANDA/public;
-       try_files $uri $uri/ =404;
-       expires 7d;
-       access_log off;
-   }
-
    location / {
-       root /www/wwwroot/DOMAIN_ANDA/public;
-       index index.html;
-       try_files $uri $uri/ /index.html;
+       try_files $uri $uri/ /index.php?$query_string;
    }
 
    location ~ /\.(env|git|ht) {
        deny all;
        return 404;
    }
+
+   location ~* \.(sqlite|sql|log)$ {
+       deny all;
+       return 404;
+   }
    ```
-   *(Ganti `DOMAIN_ANDA` dengan nama folder website Anda di aaPanel).*
 3. Klik **Save**.
 
 ---

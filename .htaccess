@@ -1,0 +1,23 @@
+# ==============================================================================
+# SAKUCI PLAYGROUND - APACHE CONFIGURATION (.htaccess)
+# ==============================================================================
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # 1. Keamanan: Blokir akses langsung ke file sensitif (.env, .git, sqlite, sql)
+    RewriteRule ^(\.env|\.git|.*\.sqlite|.*\.sql) - [F,L]
+
+    # 2. File statis (CSS, JS, Fonts, Images) dari folder public/
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # 3. Arahkan semua request (termasuk /api/ dan root /) ke index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>
+
+# Set index.php sebagai file utama default
+DirectoryIndex index.php index.html
