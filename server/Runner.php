@@ -85,7 +85,7 @@ class Runner
             $safeEntrypoint = 'index.php';
         }
 
-        $phpBinary = PHP_BINARY ?: 'php';
+        $phpBinary = self::getPhpBinary();
         $absBootstrap = realpath($bootstrapFile);
         $extArgs = self::getExtensionArgs() . "-d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
 
@@ -336,7 +336,7 @@ PHP;
         file_put_contents($bootstrapFile, $bootstrapCode);
 
         // 5. Eksekusi proses
-        $phpBinary = PHP_BINARY ?: 'php';
+        $phpBinary = self::getPhpBinary();
         $absBootstrap = realpath($bootstrapFile);
         $extArgs = self::getExtensionArgs() . "-d memory_limit=128M -d max_execution_time=5 -d display_errors=1 -d error_reporting=E_ALL -d auto_prepend_file=\"{$absBootstrap}\"";
 
@@ -760,15 +760,27 @@ try {
 PHP;
     }
 
+    private static function getPhpBinary(): string
+    {
+        $binary = PHP_BINARY ?: 'php';
+        if (str_contains(strtolower($binary), 'fpm')) {
+            return 'php';
+        }
+        return $binary;
+    }
+
     private static function getExtensionArgs(): string
     {
-        $exts = [
-            '-d extension=pdo_sqlite',
-            '-d extension=sqlite3'
-        ];
+        $exts = [];
+        if (!extension_loaded('pdo_sqlite')) {
+            $exts[] = '-d extension=pdo_sqlite';
+        }
+        if (!extension_loaded('sqlite3')) {
+            $exts[] = '-d extension=sqlite3';
+        }
         if (!extension_loaded('pdo_mysql')) {
             $exts[] = '-d extension=pdo_mysql';
         }
-        return implode(' ', $exts) . ' ';
+        return empty($exts) ? '' : (implode(' ', $exts) . ' ');
     }
 }
