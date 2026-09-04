@@ -183,10 +183,10 @@ class View
                 case 'show':
                     return '<?= \\Sakuci\\View::yieldContent(\\Sakuci\\View::stopSection()) ?>';
 
-                case 'parent':
-                    return '<?= \\Sakuci\\View::parentContent() ?>';
-
                 case 'yield':
+                    if (trim($expr) === '') {
+                        return '@yield';
+                    }
                     return "<?= \\Sakuci\\View::yieldContent({$expr}) ?>";
 
                 case 'include':
@@ -364,7 +364,7 @@ class View
         return $name;
     }
 
-    public static function yieldContent(string $name, string $default = ''): string
+    public static function yieldContent(string $name = '', string $default = ''): string
     {
         $content = static::$sections[$name] ?? $default;
 
