@@ -844,10 +844,98 @@ window.App = {
             CodeEditor.layout();
         });
 
-        // Otomatis jalankan kode saat startup agar iframe langsung menampilkan landing page
+        // Setup View Routing (Landing Page vs Monaco Editor Playground)
+        this.setupViewRouting();
+
+        // Otomatis jalankan kode saat startup agar iframe siap
         setTimeout(() => {
             this.runCode();
         }, 150);
+    },
+
+    // ==========================================
+    // VIEW ROUTING (LANDING PAGE vs PLAYGROUND)
+    // ==========================================
+    setupViewRouting: function () {
+        const checkView = () => {
+            const hash = window.location.hash || '';
+            if (hash === '#playground' || hash.startsWith('#playground')) {
+                this.showPlaygroundView();
+            } else {
+                this.showLandingView();
+            }
+        };
+
+        window.addEventListener('hashchange', checkView);
+        checkView();
+    },
+
+    showPlaygroundView: function () {
+        const landingEl = document.getElementById('view-landing');
+        const playgroundEl = document.getElementById('view-playground');
+        if (landingEl) landingEl.classList.add('hidden');
+        if (playgroundEl) playgroundEl.classList.remove('hidden');
+
+        // Layout Monaco Editor and execute preview
+        setTimeout(() => {
+            CodeEditor.layout();
+        }, 50);
+    },
+
+    showLandingView: function () {
+        const landingEl = document.getElementById('view-landing');
+        const playgroundEl = document.getElementById('view-playground');
+        if (landingEl) landingEl.classList.remove('hidden');
+        if (playgroundEl) playgroundEl.classList.add('hidden');
+    },
+
+    openPlayground: function (initialRoute, initialTab) {
+        window.location.hash = '#playground';
+        this.showPlaygroundView();
+
+        if (initialRoute) {
+            this.frameworkRoute = initialRoute;
+            const routeInput = document.getElementById('framework-route-input');
+            if (routeInput) routeInput.value = initialRoute;
+        }
+
+        if (initialTab) {
+            this.switchTab(initialTab);
+            if (window.innerWidth < 768) {
+                this.setMobileView(initialTab);
+            }
+        }
+
+        setTimeout(() => {
+            CodeEditor.layout();
+            this.runCode();
+        }, 80);
+    },
+
+    openLandingPage: function () {
+        if (window.location.hash) {
+            history.pushState('', document.title, window.location.pathname + window.location.search);
+        }
+        this.showLandingView();
+    },
+
+    switchLandingShowcase: function (tab) {
+        const tabs = ['routes', 'controller', 'view'];
+        tabs.forEach(t => {
+            const content = document.getElementById(`showcase-content-${t}`);
+            const btn = document.getElementById(`showcase-tab-${t === 'routes' ? '1' : (t === 'controller' ? '2' : '3')}`);
+            if (content) {
+                if (t === tab) content.classList.remove('hidden');
+                else content.classList.add('hidden');
+            }
+            if (btn) {
+                if (t === tab) {
+                    btn.className = 'px-4 py-2 text-sky-400 border-b-2 border-sky-500 bg-[#0d1117] rounded-t font-semibold';
+                } else {
+                    btn.className = 'px-4 py-2 text-gray-400 hover:text-gray-200 border-b-2 border-transparent transition';
+                }
+            }
+        });
     },
 
     // ==========================================

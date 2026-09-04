@@ -15,34 +15,578 @@
         require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
     </script>
 </head>
-<body class="h-screen flex flex-col bg-[#0d1117] text-gray-100 overflow-hidden select-none mobile-view-editor">
+<body class="h-screen bg-[#0d1117] text-gray-100 overflow-hidden select-none mobile-view-editor">
 
-    <!-- Top Navigation Bar -->
-    <header class="h-14 border-b border-[#30363d] bg-[#161b22] px-3 md:px-4 flex items-center justify-between z-20 shrink-0 gap-2">
-        <!-- Logo & Branding -->
-        <div class="flex items-center gap-2.5 shrink-0">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md text-base shrink-0">
-                ⚡
+    <!-- ============================================================== -->
+    <!-- VIEW 1: LANDING PAGE FRAMEWORK SAKUCI                          -->
+    <!-- ============================================================== -->
+    <div id="view-landing" class="h-screen w-full overflow-y-auto bg-[#0d1117] text-gray-100 relative selection:bg-sky-500 selection:text-white">
+        <!-- Ambient Background Glows -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[500px] bg-gradient-to-b from-sky-500/15 via-indigo-600/10 to-transparent blur-3xl pointer-events-none -z-10"></div>
+        <div class="absolute top-[800px] right-0 w-96 h-96 bg-purple-600/10 blur-[120px] pointer-events-none -z-10"></div>
+        <div class="absolute top-[1600px] left-0 w-96 h-96 bg-sky-600/10 blur-[120px] pointer-events-none -z-10"></div>
+
+        <!-- Sticky Navigation Bar -->
+        <nav class="sticky top-0 z-40 w-full border-b border-[#30363d]/80 bg-[#161b22]/85 backdrop-blur-md">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <!-- Logo & Brand -->
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-purple-600 flex items-center justify-center font-black text-white text-lg shadow-lg shadow-sky-500/20">
+                        ⚡
+                    </div>
+                    <div>
+                        <span class="font-extrabold text-base tracking-tight text-white flex items-center gap-2">
+                            Sakuci Ground
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/30">v1.2.0</span>
+                        </span>
+                        <span class="text-[11px] text-gray-400 block -mt-0.5">Sakuci PHP MVC Framework</span>
+                    </div>
+                </div>
+                
+                <!-- Center Navigation Links -->
+                <div class="hidden md:flex items-center gap-6 text-xs font-medium text-gray-300">
+                    <a href="#fitur" class="hover:text-sky-400 transition">Fitur Unggulan</a>
+                    <a href="#arsitektur" class="hover:text-sky-400 transition">Arsitektur MVC</a>
+                    <a href="#showcase" class="hover:text-sky-400 transition">Contoh Kode</a>
+                    <a href="#database" class="hover:text-sky-400 transition">Database MySQL</a>
+                    <a href="https://github.com/indrabsus/sakuci-framework.git" target="_blank" rel="noreferrer" class="hover:text-white transition flex items-center gap-1 text-gray-400">
+                        <span>GitHub</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <button onclick="App.showAuthModal('login')" class="px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white hover:bg-[#21262d] rounded-lg transition border border-[#30363d]">
+                        Masuk / Akun
+                    </button>
+                    <button onclick="App.openPlayground()" class="px-3.5 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white rounded-lg text-xs font-bold shadow-lg shadow-sky-500/25 transition transform active:scale-95 flex items-center gap-1.5">
+                        <span>⚡ Buka Playground</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                    </button>
+                </div>
             </div>
-            <div class="truncate">
-                <h1 class="font-bold text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
-                    <span class="truncate">Sakuci Ground</span>
-                    <span id="app-mode-badge" class="inline-block text-[10px] px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono font-normal">Sakuci MVC</span>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="relative pt-12 pb-20 md:pt-20 md:pb-28 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto space-y-6">
+                <!-- Announcement Pill -->
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#161b22] border border-sky-500/30 text-sky-400 text-xs font-medium shadow-inner">
+                    <span class="flex h-2 w-2 rounded-full bg-sky-400 animate-pulse"></span>
+                    <span>Playground Interaktif Framework PHP MVC Ringan & Modern</span>
+                </div>
+
+                <!-- Main Headline -->
+                <h1 class="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                    Framework PHP MVC yang <span class="bg-gradient-to-r from-sky-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent">Elegan, Cepat &amp; Siap Pakai</span>.
                 </h1>
-                <p class="text-[10px] text-gray-400 hidden sm:block">Sakuci Framework Playground</p>
-            </div>
-        </div>
 
-        <!-- Action Toolbar -->
-        <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <!-- Run Code Button -->
-            <button id="btn-run-code" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0">
-                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
-                </svg>
-                <span>Jalankan</span>
-                <span class="hidden md:inline-block text-[10px] px-1 py-0.2 rounded bg-sky-700/80 font-mono ml-0.5">Ctrl+Enter</span>
-            </button>
+                <!-- Subtitle -->
+                <p class="text-sm sm:text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
+                    Pelajari konsep arsitektur MVC sejati (Model-View-Controller), routing terstruktur, templating engine, dan database MySQL langsung di browser Anda tanpa perlu install Apache atau MySQL lokal.
+                </p>
+
+                <!-- Primary CTA Row -->
+                <div class="flex flex-wrap items-center justify-center gap-3 sm:gap-4 pt-2">
+                    <button onclick="App.openPlayground()" class="px-6 py-3 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white rounded-xl text-sm font-bold shadow-xl shadow-sky-500/30 transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+                        <span>⚡ Mulai Ngoding di Playground</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </button>
+                    <button onclick="App.openPlayground('/', 'db')" class="px-5 py-3 bg-[#161b22] hover:bg-[#21262d] text-gray-200 hover:text-white rounded-xl text-sm font-semibold border border-[#30363d] transition flex items-center gap-2">
+                        <span>🗄️ Database MySQL Latihan</span>
+                    </button>
+                    <a href="#arsitektur" class="px-4 py-3 text-gray-400 hover:text-gray-200 text-sm font-medium transition flex items-center gap-1">
+                        <span>Lihat Struktur Folder</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </a>
+                </div>
+
+                <!-- Micro Stats Bar -->
+                <div class="pt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto text-left">
+                    <div class="p-3 rounded-xl bg-[#161b22]/70 border border-[#30363d] backdrop-blur-sm">
+                        <div class="text-xs text-gray-400 font-mono">Arsitektur</div>
+                        <div class="text-sm font-bold text-white mt-0.5">MVC Sejati</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-[#161b22]/70 border border-[#30363d] backdrop-blur-sm">
+                        <div class="text-xs text-gray-400 font-mono">Routing</div>
+                        <div class="text-sm font-bold text-sky-400 mt-0.5">Clean &amp; Expressive</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-[#161b22]/70 border border-[#30363d] backdrop-blur-sm">
+                        <div class="text-xs text-gray-400 font-mono">Database</div>
+                        <div class="text-sm font-bold text-emerald-400 mt-0.5">Simulasi MySQL 8.0</div>
+                    </div>
+                    <div class="p-3 rounded-xl bg-[#161b22]/70 border border-[#30363d] backdrop-blur-sm">
+                        <div class="text-xs text-gray-400 font-mono">Setup Lokal</div>
+                        <div class="text-sm font-bold text-indigo-400 mt-0.5">0 Detik (Di Browser)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Interactive Preview Showcase -->
+            <div class="mt-14 max-w-5xl mx-auto rounded-2xl border border-[#30363d] bg-[#161b22]/90 shadow-2xl overflow-hidden backdrop-blur-md">
+                <!-- Mac-Style Window Top Header -->
+                <div class="px-4 py-3 bg-[#0d1117] border-b border-[#30363d] flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+                        <div class="w-3 h-3 rounded-full bg-yellow-500/80"></div>
+                        <div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+                        <span class="ml-2 text-xs font-mono text-gray-400 flex items-center gap-1">
+                            <span class="text-sky-400">⚡</span> routes/web.php — Sakuci Framework
+                        </span>
+                    </div>
+                    <button onclick="App.openPlayground()" class="text-[11px] font-mono text-sky-400 hover:text-sky-300 flex items-center gap-1 transition">
+                        <span>Buka di Monaco Editor</span>
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </button>
+                </div>
+
+                <!-- Split Preview: Code on Left, Live Result on Right -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 divide-y lg:divide-y-0 lg:divide-x divide-[#30363d]">
+                    <!-- Left: Code Snippet -->
+                    <div class="lg:col-span-7 p-4 sm:p-5 font-mono text-xs overflow-x-auto bg-[#0d1117]/60 leading-relaxed">
+                        <div class="text-gray-500">// routes/web.php</div>
+                        <div class="text-purple-400">use <span class="text-sky-300">Sakuci\Route</span>;</div>
+                        <div class="text-purple-400">use <span class="text-sky-300">App\Controllers\MahasiswaController</span>;</div>
+                        <br>
+                        <div class="text-gray-500">// Rute Beranda dengan View Engine</div>
+                        <div><span class="text-sky-400">Route</span>::<span class="text-yellow-400">get</span>(<span class="text-emerald-300">'/'</span>, <span class="text-purple-400">function</span> () {</div>
+                        <div class="pl-4"><span class="text-purple-400">return</span> <span class="text-yellow-400">view</span>(<span class="text-emerald-300">'welcome'</span>, [</div>
+                        <div class="pl-8"><span class="text-emerald-300">'appName'</span> =&gt; <span class="text-emerald-300">'Sakuci Ground'</span>,</div>
+                        <div class="pl-8"><span class="text-emerald-300">'status'</span>  =&gt; <span class="text-emerald-300">'Framework Aktif'</span></div>
+                        <div class="pl-4">]);</div>
+                        <div>});</div>
+                        <br>
+                        <div class="text-gray-500">// Rute CRUD Mahasiswa ke Controller</div>
+                        <div><span class="text-sky-400">Route</span>::<span class="text-yellow-400">get</span>(<span class="text-emerald-300">'/mahasiswa'</span>, [<span class="text-sky-300">MahasiswaController</span>::<span class="text-purple-400">class</span>, <span class="text-emerald-300">'index'</span>]);</div>
+                        <div><span class="text-sky-400">Route</span>::<span class="text-yellow-400">post</span>(<span class="text-emerald-300">'/mahasiswa/simpan'</span>, [<span class="text-sky-300">MahasiswaController</span>::<span class="text-purple-400">class</span>, <span class="text-emerald-300">'store'</span>]);</div>
+                    </div>
+
+                    <!-- Right: Live Result Card -->
+                    <div class="lg:col-span-5 p-5 bg-[#161b22] flex flex-col justify-between space-y-4">
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-mono text-gray-400 flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Hasil Eksekusi Instan
+                                </span>
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">HTTP 200 OK</span>
+                            </div>
+
+                            <div class="p-4 rounded-xl bg-[#0d1117] border border-[#30363d] space-y-2.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xl">🚀</span>
+                                    <div>
+                                        <h4 class="text-xs font-bold text-white">Sakuci MVC Engine</h4>
+                                        <p class="text-[10px] text-gray-400">Routing &amp; Controller terintegrasi</p>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-300 leading-normal">
+                                    Template <code class="text-sky-400">welcome.sakuci.php</code> berhasil dirender dengan variabel dinamis &amp; layouting.
+                                </div>
+                                <div class="pt-1 flex flex-wrap gap-1.5 text-[10px] font-mono">
+                                    <span class="px-2 py-0.5 rounded bg-sky-950 text-sky-300 border border-sky-800">/mahasiswa</span>
+                                    <span class="px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">MySQL 8.0</span>
+                                    <span class="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">MVC Architecture</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="App.openPlayground('/mahasiswa')" class="w-full py-2 bg-[#21262d] hover:bg-[#30363d] text-sky-400 hover:text-sky-300 rounded-lg text-xs font-semibold border border-[#30363d] transition flex items-center justify-center gap-1.5">
+                            <span>Uji Coba Rute /mahasiswa di Playground</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Grid (#fitur) -->
+        <section id="fitur" class="py-16 md:py-24 border-t border-[#30363d]/80 bg-[#161b22]/40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+                <div class="text-center max-w-2xl mx-auto space-y-3">
+                    <span class="text-xs font-mono font-semibold uppercase tracking-wider text-sky-400">Fitur Unggulan</span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Semua yang Anda Butuhkan untuk Belajar PHP Modern</h2>
+                    <p class="text-xs sm:text-sm text-gray-400">Didesain khusus untuk memahami arsitektur aplikasi web modern tanpa distraksi konfigurasi server yang rumit.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Feature 1 -->
+                    <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-sky-500/50 transition duration-300 space-y-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            ⚡
+                        </div>
+                        <h3 class="text-base font-bold text-white">Routing Ekspresif &amp; Bersih</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Mendukung closure routes, controller actions, parameter dinamis <code>{id}</code>, method HTTP (GET/POST), dan penamaan route <code>-&gt;name()</code> seperti framework modern.
+                        </p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-indigo-500/50 transition duration-300 space-y-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            🏛️
+                        </div>
+                        <h3 class="text-base font-bold text-white">Arsitektur MVC Sejati</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Pemisahan tanggung jawab yang jelas antara Controller (logika), Model (data), dan View (antarmuka). Mempersiapkan mahasiswa menghadapi standar industri web framework.
+                        </p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-purple-500/50 transition duration-300 space-y-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            🎨
+                        </div>
+                        <h3 class="text-base font-bold text-white">Sakuci View Templating</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Templating engine bawaan yang mendukung layout inheritance <code>@extends</code>, sectioning <code>@section</code> &amp; <code>@yield</code>, serta proteksi XSS otomatis dengan <code>{{ $variabel }}</code>.
+                        </p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-emerald-500/50 transition duration-300 space-y-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            🐬
+                        </div>
+                        <h3 class="text-base font-bold text-white">Simulasi MySQL 8.0 Siap Pakai</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Dilengkapi database <code>latihan</code> dengan tabel <code>mahasiswa</code>, <code>produk</code>, dan <code>users</code>. Langsung terhubung via PDO atau mysqli tanpa konfigurasi XAMPP.
+                        </p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-amber-500/50 transition duration-300 space-y-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            💻
+                        </div>
+                        <h3 class="text-base font-bold text-white">Terminal CLI Interaktif</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Eksekusi perintah terminal langsung di playground. Jalankan generator file, pengecekan route dengan <code>route:list</code>, atau perintah simulasi lainnya dengan mudah.
+                        </p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] hover:border-pink-500/50 transition duration-300 space-y-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 border border-pink-500/20 flex items-center justify-center text-xl group-hover:scale-110 transition">
+                            ☁️
+                        </div>
+                        <h3 class="text-base font-bold text-white">Cloud Session &amp; Multi-User</h3>
+                        <p class="text-xs text-gray-400 leading-relaxed">
+                            Daftarkan akun dan seluruh perubahan berkas serta data database Anda akan tersimpan aman di cloud. Lanjutkan ngoding dari laptop, komputer kampus, atau tablet kapan pun.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Breakdown (#arsitektur) -->
+        <section id="arsitektur" class="py-16 md:py-24 border-t border-[#30363d]/80 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+            <div class="text-center max-w-2xl mx-auto space-y-3">
+                <span class="text-xs font-mono font-semibold uppercase tracking-wider text-indigo-400">Struktur Direktori</span>
+                <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Struktur Folder Bersih &amp; Terstandar</h2>
+                <p class="text-xs sm:text-sm text-gray-400">Dirancang sesuai konvensi framework modern untuk mempermudah transisi menuju ekosistem profesional.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Folder 1: App & Logic -->
+                <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-sm font-bold text-sky-400">📁 app/</span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#21262d] text-gray-300">Core Logic</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Pusat logika bisnis aplikasi:
+                    </p>
+                    <ul class="text-xs space-y-2 font-mono text-gray-300">
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-sky-300">Controllers/</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Penangan request dan response HTTP (contoh: <code>MahasiswaController.php</code>)</div>
+                        </li>
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-indigo-300">Models/</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Entitas model data dan query database</div>
+                        </li>
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-purple-300">Middleware/</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Filter keamanan request (Auth, Guest)</div>
+                        </li>
+                    </ul>
+                    <button onclick="App.openPlayground(); App.openFile('app/Controllers/MahasiswaController.php');" class="w-full py-2 bg-[#21262d] hover:bg-[#30363d] text-gray-300 hover:text-white rounded-lg text-xs font-medium border border-[#30363d] transition">
+                        Buka MahasiswaController.php &rarr;
+                    </button>
+                </div>
+
+                <!-- Folder 2: Routes & Config -->
+                <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-sm font-bold text-indigo-400">📁 routes/ &amp; config/</span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#21262d] text-gray-300">Endpoint &amp; Env</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Pintu gerbang aplikasi dan pengaturan lingkungan:
+                    </p>
+                    <ul class="text-xs space-y-2 font-mono text-gray-300">
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-sky-300">routes/web.php</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Pendaftaran seluruh URL endpoint dan middleware</div>
+                        </li>
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-indigo-300">config/database.php</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Kredensial driver SQLite &amp; MySQL</div>
+                        </li>
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-emerald-300">.env</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Variabel environment aplikasi dan database</div>
+                        </li>
+                    </ul>
+                    <button onclick="App.openPlayground(); App.openFile('routes/web.php');" class="w-full py-2 bg-[#21262d] hover:bg-[#30363d] text-gray-300 hover:text-white rounded-lg text-xs font-medium border border-[#30363d] transition">
+                        Buka routes/web.php &rarr;
+                    </button>
+                </div>
+
+                <!-- Folder 3: Views & Resources -->
+                <div class="p-6 rounded-2xl bg-[#161b22] border border-[#30363d] space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="font-mono text-sm font-bold text-purple-400">📁 resources/views/</span>
+                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-[#21262d] text-gray-300">Presentation</span>
+                    </div>
+                    <p class="text-xs text-gray-400 leading-relaxed">
+                        Antarmuka pengguna (UI) aplikasi:
+                    </p>
+                    <ul class="text-xs space-y-2 font-mono text-gray-300">
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-sky-300">views/welcome.sakuci.php</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Halaman beranda aplikasi web</div>
+                        </li>
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-indigo-300">views/layouts/app.sakuci.php</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Master layout dengan slot header, footer &amp; yield content</div>
+                        </li>
+                        <li class="p-2 rounded bg-[#0d1117] border border-[#30363d]">
+                            <span class="text-purple-300">views/mahasiswa/index.sakuci.php</span>
+                            <div class="text-[11px] text-gray-400 font-sans mt-0.5">Halaman tabel dan form CRUD mahasiswa</div>
+                        </li>
+                    </ul>
+                    <button onclick="App.openPlayground(); App.openFile('resources/views/welcome.sakuci.php');" class="w-full py-2 bg-[#21262d] hover:bg-[#30363d] text-gray-300 hover:text-white rounded-lg text-xs font-medium border border-[#30363d] transition">
+                        Buka welcome.sakuci.php &rarr;
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Code Showcase Section (#showcase) -->
+        <section id="showcase" class="py-16 md:py-24 border-t border-[#30363d]/80 bg-[#161b22]/30">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                <div class="text-center max-w-2xl mx-auto space-y-3">
+                    <span class="text-xs font-mono font-semibold uppercase tracking-wider text-emerald-400">Showcase Kode</span>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Sintaks Bersih, Intuitif &amp; Modern</h2>
+                    <p class="text-xs sm:text-sm text-gray-400">Lihat betapa mudahnya mendefinisikan rute, controller, dan template view di Sakuci Framework.</p>
+                </div>
+
+                <!-- Showcase Box -->
+                <div class="rounded-2xl border border-[#30363d] bg-[#0d1117] overflow-hidden shadow-2xl">
+                    <!-- Tabs -->
+                    <div class="flex border-b border-[#30363d] bg-[#161b22] px-3 pt-2 gap-1 overflow-x-auto text-xs font-mono">
+                        <button id="showcase-tab-1" onclick="App.switchLandingShowcase('routes')" class="px-4 py-2 text-sky-400 border-b-2 border-sky-500 bg-[#0d1117] rounded-t font-semibold">
+                            routes/web.php
+                        </button>
+                        <button id="showcase-tab-2" onclick="App.switchLandingShowcase('controller')" class="px-4 py-2 text-gray-400 hover:text-gray-200 border-b-2 border-transparent transition">
+                            MahasiswaController.php
+                        </button>
+                        <button id="showcase-tab-3" onclick="App.switchLandingShowcase('view')" class="px-4 py-2 text-gray-400 hover:text-gray-200 border-b-2 border-transparent transition">
+                            mahasiswa.php (View)
+                        </button>
+                    </div>
+
+                    <!-- Code Snippets -->
+                    <div class="p-6 font-mono text-xs leading-relaxed overflow-x-auto">
+                        <div id="showcase-content-routes" class="space-y-1">
+                            <span class="text-gray-500">// routes/web.php - Definisi Rute Web</span><br>
+                            <span class="text-purple-400">&lt;?php</span><br><br>
+                            <span class="text-purple-400">use</span> <span class="text-sky-300">Sakuci\Route</span>;<br>
+                            <span class="text-purple-400">use</span> <span class="text-sky-300">App\Controllers\MahasiswaController</span>;<br><br>
+                            <span class="text-sky-400">Route</span>::<span class="text-yellow-400">get</span>(<span class="text-emerald-300">'/'</span>, <span class="text-purple-400">function</span> () {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">return</span> <span class="text-yellow-400">view</span>(<span class="text-emerald-300">'welcome'</span>);<br>
+                            })-&gt;<span class="text-yellow-400">name</span>(<span class="text-emerald-300">'home'</span>);<br><br>
+                            <span class="text-gray-500">// Resource CRUD Mahasiswa</span><br>
+                            <span class="text-sky-400">Route</span>::<span class="text-yellow-400">get</span>(<span class="text-emerald-300">'/mahasiswa'</span>, [<span class="text-sky-300">MahasiswaController</span>::<span class="text-purple-400">class</span>, <span class="text-emerald-300">'index'</span>]);<br>
+                            <span class="text-sky-400">Route</span>::<span class="text-yellow-400">get</span>(<span class="text-emerald-300">'/mahasiswa/tambah'</span>, [<span class="text-sky-300">MahasiswaController</span>::<span class="text-purple-400">class</span>, <span class="text-emerald-300">'create'</span>]);<br>
+                            <span class="text-sky-400">Route</span>::<span class="text-yellow-400">post</span>(<span class="text-emerald-300">'/mahasiswa/simpan'</span>, [<span class="text-sky-300">MahasiswaController</span>::<span class="text-purple-400">class</span>, <span class="text-emerald-300">'store'</span>]);
+                        </div>
+
+                        <div id="showcase-content-controller" class="space-y-1 hidden">
+                            <span class="text-gray-500">// app/Controllers/MahasiswaController.php</span><br>
+                            <span class="text-purple-400">&lt;?php</span><br><br>
+                            <span class="text-purple-400">namespace</span> <span class="text-sky-300">App\Controllers</span>;<br><br>
+                            <span class="text-purple-400">use</span> <span class="text-sky-300">Sakuci\Controller</span>;<br>
+                            <span class="text-purple-400">use</span> <span class="text-sky-300">Sakuci\Database\Model</span>;<br><br>
+                            <span class="text-purple-400">class</span> <span class="text-yellow-400">MahasiswaController</span> <span class="text-purple-400">extends</span> <span class="text-sky-300">Controller</span> {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">public function</span> <span class="text-yellow-400">index</span>() {<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-gray-500">// Ambil data mahasiswa dari database</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-sky-200">$mahasiswa</span> = <span class="text-sky-300">Model</span>::<span class="text-yellow-400">table</span>(<span class="text-emerald-300">'mahasiswa'</span>)-&gt;<span class="text-yellow-400">get</span>();<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-purple-400">return</span> <span class="text-yellow-400">view</span>(<span class="text-emerald-300">'mahasiswa.index'</span>, [<span class="text-emerald-300">'mahasiswa'</span> =&gt; <span class="text-sky-200">$mahasiswa</span>]);<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                            }
+                        </div>
+
+                        <div id="showcase-content-view" class="space-y-1 hidden">
+                            <span class="text-gray-500">// resources/views/mahasiswa/index.sakuci.php</span><br>
+                            <span class="text-yellow-400">@extends</span>(<span class="text-emerald-300">'layouts.app'</span>)<br><br>
+                            <span class="text-yellow-400">@section</span>(<span class="text-emerald-300">'content'</span>)<br>
+                            <span class="text-sky-400">&lt;div</span> <span class="text-purple-400">class</span>=<span class="text-emerald-300">"container py-4"</span><span class="text-sky-400">&gt;</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-sky-400">&lt;h2&gt;</span>Data Mahasiswa<span class="text-sky-400">&lt;/h2&gt;</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-yellow-400">@foreach</span> (<span class="text-sky-200">$mahasiswa</span> <span class="text-purple-400">as</span> <span class="text-sky-200">$mhs</span>)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-sky-400">&lt;div</span> <span class="text-purple-400">class</span>=<span class="text-emerald-300">"card mb-2"</span><span class="text-sky-400">&gt;</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-sky-400">&lt;strong&gt;</span>{{ <span class="text-sky-200">$mhs</span>-&gt;<span class="text-sky-100">nama</span> }}<span class="text-sky-400">&lt;/strong&gt;</span> - {{ <span class="text-sky-200">$mhs</span>-&gt;<span class="text-sky-100">jurusan</span> }}<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-sky-400">&lt;/div&gt;</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;<span class="text-yellow-400">@endforeach</span><br>
+                            <span class="text-sky-400">&lt;/div&gt;</span><br>
+                            <span class="text-yellow-400">@endsection</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bar of Showcase -->
+                    <div class="px-6 py-3 bg-[#161b22] border-t border-[#30363d] flex items-center justify-between">
+                        <span class="text-[11px] text-gray-400">Kode lengkap dapat diedit dan diuji coba langsung di Playground.</span>
+                        <button onclick="App.openPlayground()" class="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+                            <span>Buka di Editor</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Section (#database) -->
+        <section id="database" class="py-16 md:py-24 border-t border-[#30363d]/80 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="rounded-3xl bg-gradient-to-br from-[#161b22] via-[#1c2128] to-[#161b22] border border-[#30363d] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                    <div class="lg:col-span-7 space-y-4">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800 text-blue-300 text-xs font-mono">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            MySQL 8.0 Simulation Engine
+                        </div>
+                        <h2 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight">Database Latihan Sudah Terhubung Otomatis</h2>
+                        <p class="text-xs sm:text-sm text-gray-300 leading-relaxed">
+                            Tidak perlu lagi pusing menyalakan Apache &amp; MySQL di XAMPP atau membuat database manual. Playground ini telah dilengkapi engine database SQLite &amp; simulasi MySQL 8.0 dengan tabel sampel:
+                        </p>
+                        <div class="grid grid-cols-3 gap-3 pt-2 font-mono text-xs">
+                            <div class="p-2.5 rounded-xl bg-[#0d1117] border border-[#30363d]">
+                                <div class="text-emerald-400 font-bold">mahasiswa</div>
+                                <div class="text-[10px] text-gray-400">NIM, Nama, Jurusan, IPK</div>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-[#0d1117] border border-[#30363d]">
+                                <div class="text-sky-400 font-bold">produk</div>
+                                <div class="text-[10px] text-gray-400">Kode, Nama, Harga, Stok</div>
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-[#0d1117] border border-[#30363d]">
+                                <div class="text-purple-400 font-bold">users</div>
+                                <div class="text-[10px] text-gray-400">Akun, Email, Password</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-5 p-5 rounded-2xl bg-[#0d1117] border border-[#30363d] space-y-3 font-mono text-xs">
+                        <div class="flex items-center justify-between pb-2 border-b border-[#30363d]">
+                            <span class="text-gray-400 font-sans font-semibold">Kredensial Koneksi</span>
+                            <span class="text-emerald-400 text-[11px]">Ready to Query</span>
+                        </div>
+                        <div class="flex justify-between text-gray-300">
+                            <span class="text-gray-500">Host:</span>
+                            <span class="text-sky-400 font-semibold">localhost</span>
+                        </div>
+                        <div class="flex justify-between text-gray-300">
+                            <span class="text-gray-500">Port:</span>
+                            <span class="text-sky-400 font-semibold">3306</span>
+                        </div>
+                        <div class="flex justify-between text-gray-300">
+                            <span class="text-gray-500">User / Password:</span>
+                            <span class="text-sky-400 font-semibold">root / "" (kosong)</span>
+                        </div>
+                        <div class="flex justify-between text-gray-300">
+                            <span class="text-gray-500">Database:</span>
+                            <span class="text-sky-400 font-semibold">latihan</span>
+                        </div>
+                        <button onclick="App.openPlayground('/', 'db')" class="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center justify-center gap-2">
+                            <span>Buka Tab Database Manager</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA Banner -->
+        <section class="py-20 border-t border-[#30363d]/80 bg-gradient-to-b from-transparent to-[#161b22]/90">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">Siap Mulai Menguasai PHP MVC?</h2>
+                <p class="text-sm sm:text-base text-gray-300 max-w-xl mx-auto">
+                    Buka playground sekarang, tulis controller pertamamu, dan rasakan kemudahan membangun aplikasi web dengan Sakuci Framework.
+                </p>
+                <div class="pt-2">
+                    <button onclick="App.openPlayground()" class="px-8 py-4 bg-gradient-to-r from-sky-500 via-indigo-600 to-purple-600 hover:from-sky-400 hover:to-purple-500 text-white rounded-2xl text-base font-extrabold shadow-2xl shadow-sky-500/30 transition transform hover:-translate-y-1 active:translate-y-0 inline-flex items-center gap-3">
+                        <span>⚡ Masuk ke Editor Sakuci Ground</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Landing Footer -->
+        <footer class="border-t border-[#30363d] bg-[#0d1117] py-8 text-xs text-gray-500">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <span class="text-sky-400 font-bold">⚡ Sakuci Ground</span>
+                    <span>— Framework PHP MVC untuk Pembelajaran Interaktif.</span>
+                </div>
+                <div class="flex items-center gap-4 text-gray-400">
+                    <a href="https://github.com/indrabsus/sakuci-framework.git" target="_blank" rel="noreferrer" class="hover:text-white transition">Repository GitHub</a>
+                    <span>•</span>
+                    <button onclick="App.openPlayground()" class="hover:text-sky-400 transition">Editor Playground</button>
+                    <span>•</span>
+                    <button onclick="App.clearCache()" class="hover:text-amber-400 transition">Bersihkan Cache</button>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- VIEW 2: MONACO PLAYGROUND IDE (EDITOR, TERMINAL, DATABASE)     -->
+    <!-- ============================================================== -->
+    <div id="view-playground" class="h-screen flex flex-col overflow-hidden hidden">
+        <!-- Top Navigation Bar -->
+        <header class="h-14 border-b border-[#30363d] bg-[#161b22] px-3 md:px-4 flex items-center justify-between z-20 shrink-0 gap-2">
+            <!-- Logo & Branding with Back to Landing Button -->
+            <div class="flex items-center gap-2 shrink-0">
+                <!-- Return to Landing Page Button -->
+                <button onclick="App.openLandingPage()" title="Kembali ke Halaman Beranda (Landing Page)" class="px-2.5 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-200 hover:text-white rounded-md text-xs font-semibold border border-[#30363d] transition flex items-center gap-1.5 shrink-0">
+                    <span class="text-sm">🏠</span>
+                    <span class="hidden sm:inline">Beranda</span>
+                </button>
+
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md text-base shrink-0 cursor-pointer" onclick="App.openLandingPage()" title="Kembali ke Beranda">
+                    ⚡
+                </div>
+                <div class="truncate cursor-pointer" onclick="App.openLandingPage()" title="Kembali ke Beranda">
+                    <h1 class="font-bold text-xs sm:text-sm tracking-tight flex items-center gap-1.5">
+                        <span class="truncate">Sakuci Ground</span>
+                        <span id="app-mode-badge" class="inline-block text-[10px] px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-800 font-mono font-normal">Sakuci MVC</span>
+                    </h1>
+                    <p class="text-[10px] text-gray-400 hidden sm:block">Sakuci Framework Playground</p>
+                </div>
+            </div>
+
+            <!-- Action Toolbar -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                <!-- Run Code Button -->
+                <button id="btn-run-code" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-md text-xs font-semibold flex items-center gap-1.5 shadow-sm transition active:scale-95 shrink-0">
+                    <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Jalankan</span>
+                    <span class="hidden md:inline-block text-[10px] px-1 py-0.2 rounded bg-sky-700/80 font-mono ml-0.5">Ctrl+Enter</span>
+                </button>
 
             <!-- Format Code Button -->
             <button id="btn-format-code" title="Rapikan Format Kode" class="hidden sm:flex px-2 py-1.5 bg-[#21262d] hover:bg-[#30363d] text-gray-300 rounded-md text-xs font-medium border border-[#30363d] transition items-center gap-1">
@@ -358,6 +902,7 @@
             <span class="text-[10px] font-medium">Database</span>
         </button>
     </nav>
+    </div> <!-- Close #view-playground -->
 
     <!-- Modal Buat File Baru -->
     <div id="modal-create-file" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 hidden px-4">
