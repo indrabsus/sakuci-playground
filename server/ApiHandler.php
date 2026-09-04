@@ -236,6 +236,9 @@ class ApiHandler
                             }
                         }
                     }
+                    if (function_exists('opcache_reset')) {
+                        @opcache_reset();
+                    }
                     echo json_encode(['success' => true, 'message' => 'Cache server dan berkas sementara berhasil dibersihkan!']);
                     break;
 

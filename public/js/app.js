@@ -963,6 +963,13 @@ window.App = {
             await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
         } catch (e) {}
 
+        if ('caches' in window) {
+            try {
+                const cacheKeys = await caches.keys();
+                await Promise.all(cacheKeys.map(k => caches.delete(k)));
+            } catch (e) {}
+        }
+
         try {
             const keysToRemove = [];
             for (let i = 0; i < localStorage.length; i++) {
