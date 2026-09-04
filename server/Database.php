@@ -376,6 +376,7 @@ class Database
                 $stmt = $pdo->query("DESCRIBE `{$safeName}`");
                 foreach ($stmt->fetchAll() as $col) {
                     $columns[] = [
+                        'name' => $col['Field'],
                         'Field' => $col['Field'],
                         'Type' => $col['Type'],
                         'Null' => $col['Null'],
@@ -389,6 +390,7 @@ class Database
                 $stmt = $pdo->query("PRAGMA table_info(\"{$safeName}\")");
                 foreach ($stmt->fetchAll() as $col) {
                     $columns[] = [
+                        'name' => $col['name'],
                         'Field' => $col['name'],
                         'Type' => $col['type'] ?: 'TEXT',
                         'Null' => $col['notnull'] ? 'NO' : 'YES',

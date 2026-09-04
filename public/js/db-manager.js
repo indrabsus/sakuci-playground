@@ -74,8 +74,8 @@ window.DbManager = {
             }
 
             tableListEl.innerHTML = data.tables.map(t => `
-                <button onclick="DbManager.viewTable('${t.name}')" 
-                    class="w-full flex items-center justify-between px-3 py-2 rounded text-left text-xs hover:bg-[#21262d] transition group ${this.currentTable === t.name ? 'bg-sky-950/50 text-sky-300 border border-sky-800' : 'text-gray-300'}">
+                <button data-table="${t.name}" onclick="DbManager.viewTable('${t.name}')" 
+                    class="w-full flex items-center justify-between px-3 py-2 rounded text-left text-xs transition group ${this.currentTable === t.name ? 'bg-sky-950/50 text-sky-300 border border-sky-800' : 'text-gray-300 hover:bg-[#21262d]'}">
                     <span class="flex items-center gap-1.5 font-mono">
                         <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1.5 3 3.5 3h9c2 0 3.5-1 3.5-3V7M4 7c0-2 1.5-3 3.5-3h9c2 0 3.5 1 3.5 3M4 7h16m-8 4v8m-4-4h8"></path></svg>
                         ${t.name}
@@ -93,10 +93,23 @@ window.DbManager = {
         }
     },
 
+    updateTableActiveHighlight: function (tableName) {
+        const tableListEl = document.getElementById('db-tables-list');
+        if (!tableListEl) return;
+        const buttons = tableListEl.querySelectorAll('button[data-table]');
+        buttons.forEach(btn => {
+            if (btn.getAttribute('data-table') === tableName) {
+                btn.className = 'w-full flex items-center justify-between px-3 py-2 rounded text-left text-xs bg-sky-950/50 text-sky-300 border border-sky-800 transition group';
+            } else {
+                btn.className = 'w-full flex items-center justify-between px-3 py-2 rounded text-left text-xs text-gray-300 hover:bg-[#21262d] transition group';
+            }
+        });
+    },
+
     viewTable: async function (tableName, page = 1) {
         this.currentTable = tableName;
         this.currentPage = page;
-        this.loadTables(); // Update active highlight
+        this.updateTableActiveHighlight(tableName);
 
         const dataContainer = document.getElementById('db-table-content');
         if (!dataContainer) return;
@@ -117,7 +130,17 @@ window.DbManager = {
                 return;
             }
 
-            const columns = schema.success ? schema.columns.map(c => c.name) : (data.rows[0] ? Object.keys(data.rows[0]) : []);
+            // Ekstrak nama kolom secara robust (mendukung schema MySQL Field, SQLite name, atau langsung dari rows)
+            let columns = [];
+            if (schema.success && Array.isArray(schema.columns) && schema.columns.length > 0) {
+                columns = schema.columns.map(c => typeof c === 'string' ? c : (c.name || c.Field || c.field || '')).filter(Boolean);
+            }
+            if (columns.length === 0 && data.columns && Array.isArray(data.columns) && data.columns.length > 0) {
+                columns = data.columns.map(c => typeof c === 'string' ? c : (c.name || c.Field || c.field || '')).filter(Boolean);
+            }
+            if (columns.length === 0 && data.rows && data.rows.length > 0) {
+                columns = Object.keys(data.rows[0]);
+            }
 
             let html = `
                 <div class="flex items-center justify-between p-3 border-b border-[#30363d] bg-[#161b22]">
@@ -125,7 +148,7 @@ window.DbManager = {
                         <span class="text-sm font-semibold text-white font-mono flex items-center gap-1.5">
                             📊 Tabel: <span class="text-sky-400">${tableName}</span>
                         </span>
-                        <span class="text-xs text-gray-400 font-mono">(${data.total ?? data.total_rows ?? 0} total data)</span>
+                        <span class="text-xs text-gray-400 font-mono">(${data.total ?? data.total_rows ?? (data.rows ? data.rows.length : 0)} total data)</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="DbManager.copySelectQuery('${tableName}')" class="text-xs text-sky-400 hover:text-sky-300 px-2 py-1 bg-sky-950/40 rounded border border-sky-800 transition">
@@ -145,7 +168,7 @@ window.DbManager = {
                                 <tr>
                                     ${columns.map(col => `
                                         <th class="px-3 py-2 text-gray-300 font-mono font-medium whitespace-nowrap bg-[#1c2128]">
-                                            ${col}
+                                            ${this.escapeHtml(col)}
                                         </th>
                                     `).join('')}
                                 </tr>
@@ -153,11 +176,14 @@ window.DbManager = {
                             <tbody>
                                 ${data.rows.map(row => `
                                     <tr class="border-b border-[#21262d] hover:bg-[#21262d]/40 transition">
-                                        ${columns.map(col => `
-                                            <td class="px-3 py-2 font-mono text-gray-200 whitespace-nowrap">
-                                                ${row[col] !== null ? this.escapeHtml(String(row[col])) : '<span class="text-gray-500 italic">NULL</span>'}
-                                            </td>
-                                        `).join('')}
+                                        ${columns.map(col => {
+                                            const val = row[col];
+                                            return `
+                                                <td class="px-3 py-2 font-mono text-gray-200 whitespace-nowrap">
+                                                    ${val !== null && val !== undefined ? this.escapeHtml(String(val)) : '<span class="text-gray-500 italic">NULL</span>'}
+                                                </td>
+                                            `;
+                                        }).join('')}
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -237,22 +263,28 @@ window.DbManager = {
                 if (data.rows.length === 0) {
                     html += '<div class="text-xs text-gray-400 p-2 italic">Hasil query kosong (0 baris).</div>';
                 } else {
+                    const queryCols = (data.columns && data.columns.length > 0)
+                        ? data.columns.map(c => typeof c === 'string' ? c : (c.name || c.Field || c.field || ''))
+                        : (data.rows[0] ? Object.keys(data.rows[0]) : []);
                     html += `
                         <div class="overflow-auto max-h-[220px] rounded border border-[#30363d]">
                             <table class="db-table-grid text-xs text-left">
                                 <thead>
                                     <tr>
-                                        ${data.columns.map(c => `<th class="px-2.5 py-1.5 font-mono text-gray-300 bg-[#1c2128]">${c}</th>`).join('')}
+                                        ${queryCols.map(c => `<th class="px-2.5 py-1.5 font-mono text-gray-300 bg-[#1c2128] whitespace-nowrap">${this.escapeHtml(String(c))}</th>`).join('')}
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${data.rows.map(row => `
-                                        <tr class="border-b border-[#21262d]">
-                                            ${data.columns.map(c => `
-                                                <td class="px-2.5 py-1.5 font-mono text-gray-200 whitespace-nowrap">
-                                                    ${row[c] !== null ? this.escapeHtml(String(row[c])) : '<span class="text-gray-500 italic">NULL</span>'}
-                                                </td>
-                                            `).join('')}
+                                        <tr class="border-b border-[#21262d] hover:bg-[#21262d]/40">
+                                            ${queryCols.map(c => {
+                                                const val = row[c];
+                                                return `
+                                                    <td class="px-2.5 py-1.5 font-mono text-gray-200 whitespace-nowrap">
+                                                        ${val !== null && val !== undefined ? this.escapeHtml(String(val)) : '<span class="text-gray-500 italic">NULL</span>'}
+                                                    </td>
+                                                `;
+                                            }).join('')}
                                         </tr>
                                     `).join('')}
                                 </tbody>
