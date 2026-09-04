@@ -113,8 +113,8 @@ class ApiHandler
                         self::error('Method not allowed', 405);
                     }
                     $files = (isset($input['files']) && is_array($input['files'])) ? $input['files'] : ['index.php' => $input['code'] ?? ''];
-                    $entrypoint = $input['entrypoint'] ?? 'index.php';
-                    $mode = $input['mode'] ?? 'native';
+                    $mode = $input['mode'] ?? 'framework';
+                    $entrypoint = $input['entrypoint'] ?? (($mode === 'framework') ? 'public/index.php' : 'index.php');
                     $routeUri = $input['route_uri'] ?? '/';
                     $httpMethod = $input['http_method'] ?? 'GET';
                     $postData = (isset($input['post_data']) && is_array($input['post_data'])) ? $input['post_data'] : [];
