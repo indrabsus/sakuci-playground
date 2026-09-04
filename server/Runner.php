@@ -183,16 +183,29 @@ class Runner
 
         $frameworkSrc = __DIR__ . '/framework/sakuci';
 
-        // 1. Salin template dasar framework (core, config, default app & routes & views)
+        // 1. Salin template dasar framework (core, config, default app & routes & views, database, public, cli)
         self::copyDirectory($frameworkSrc . '/core', $runDir . '/core');
         self::copyDirectory($frameworkSrc . '/config', $runDir . '/config');
         self::copyDirectory($frameworkSrc . '/app_default', $runDir . '/app');
         self::copyDirectory($frameworkSrc . '/resources_default', $runDir . '/resources');
         self::copyDirectory($frameworkSrc . '/routes_default', $runDir . '/routes');
 
-        mkdir($runDir . '/storage/views', 0777, true);
-        mkdir($runDir . '/storage/sessions', 0777, true);
-        mkdir($runDir . '/public', 0777, true);
+        if (is_dir($frameworkSrc . '/database')) {
+            self::copyDirectory($frameworkSrc . '/database', $runDir . '/database');
+        }
+        if (is_dir($frameworkSrc . '/public')) {
+            self::copyDirectory($frameworkSrc . '/public', $runDir . '/public');
+        }
+        if (file_exists($frameworkSrc . '/sakuci')) {
+            copy($frameworkSrc . '/sakuci', $runDir . '/sakuci');
+        }
+
+        mkdir($runDir . '/storage/framework/views', 0777, true);
+        mkdir($runDir . '/storage/framework/sessions', 0777, true);
+        mkdir($runDir . '/storage/logs', 0777, true);
+        if (!is_dir($runDir . '/public')) {
+            mkdir($runDir . '/public', 0777, true);
+        }
 
         // 2. Timpa dengan berkas yang diedit/dibuat pengguna di playground
         foreach ($files as $filename => $content) {

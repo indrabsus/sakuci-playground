@@ -1,0 +1,533 @@
+<?php
+/*
+|--------------------------------------------------------------------------
+| Sakuci CLI
+|--------------------------------------------------------------------------
+| Padanan "artisan" versi ringan. Jalankan: php sakuci <perintah>
+*/
+
+if (PHP_SAPI !== 'cli') {
+    exit('Sakuci CLI hanya bisa dijalankan dari terminal.');
+}
+
+define('BASE_PATH', __DIR__);
+
+require BASE_PATH . '/core/bootstrap.php';
+
+use Sakuci\Application;
+use Sakuci\Database\Connection;
+use Sakuci\Route;
+
+$app = new Application(BASE_PATH);
+
+$command   = $argv[1] ?? 'list';
+$arguments = array_slice($argv, 2);
+
+/* ------------------------------------------------------------------ */
+/* Utilitas tampilan                                                   */
+/* ------------------------------------------------------------------ */
+
+function out(string $text = '', string $color = ''): void
+{
+    $colors = [
+        'green'  => "\033[32m",
+        'yellow' => "\033[33m",
+        'red'    => "\033[31m",
+        'cyan'   => "\033[36m",
+        'gray'   => "\033[90m",
+        'bold'   => "\033[1m",
+    ];
+
+    echo ($colors[$color] ?? '') . $text . ($color ? "\033[0m" : '') . PHP_EOL;
+}
+
+function ok(string $text): void
+{
+    out('  ' . $text, 'green');
+}
+
+function fail(string $text): void
+{
+    out('  ' . $text, 'red');
+}
+
+/** Muat konfigurasi tanpa memulai session/HTTP. */
+function bootConfig(Application $app): void
+{
+    static $booted = false;
+
+    if ($booted) {
+        return;
+    }
+
+    $reflection = new ReflectionMethod($app, 'loadEnvironment');
+    $reflection->setAccessible(true);
+    $reflection->invoke($app);
+
+    Sakuci\Config::load(BASE_PATH . '/config');
+    date_default_timezone_set(config('app.timezone', 'Asia/Jakarta'));
+
+    $booted = true;
+}
+
+/**
+ * Pisahkan opsi (-m, --migration) dari argumen biasa.
+ * Opsi gabungan seperti -mc ikut dipecah menjadi "m" dan "c".
+ *
+ * @return array{0: string[], 1: string[]} [argumen, opsi]
+ */
+function pisahOpsi(array $arguments): array
+{
+    $argumen = [];
+    $opsi    = [];
+
+    foreach ($arguments as $arg) {
+        if (str_starts_with($arg, '--')) {
+            $opsi[] = substr($arg, 2);
+        } elseif (str_starts_with($arg, '-') && strlen($arg) > 1) {
+            $opsi = array_merge($opsi, str_split(substr($arg, 1)));
+        } else {
+            $argumen[] = $arg;
+        }
+    }
+
+    return [$argumen, $opsi];
+}
+
+function adaOpsi(array $opsi, string ...$nama): bool
+{
+    return array_intersect($opsi, $nama) !== [];
+}
+
+/** Isi berkas migrasi, menyesuaikan sintaks driver yang dipakai. */
+function stubMigrasi(string $namaMigrasi, string $tabel): string
+{
+    if (config('database.default') === 'mysql') {
+        return "-- {$namaMigrasi}\n\n"
+            . "CREATE TABLE IF NOT EXISTS `{$tabel}` (\n"
+            . "    id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,\n"
+            . "    nama       VARCHAR(255) NOT NULL,\n"
+            . "    created_at DATETIME NULL,\n"
+            . "    updated_at DATETIME NULL\n"
+            . ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;\n";
+    }
+
+    return "-- {$namaMigrasi}\n\n"
+        . "CREATE TABLE IF NOT EXISTS \"{$tabel}\" (\n"
+        . "    id         INTEGER PRIMARY KEY AUTOINCREMENT,\n"
+        . "    nama       TEXT NOT NULL,\n"
+        . "    created_at TEXT,\n"
+        . "    updated_at TEXT\n"
+        . ");\n";
+}
+
+/**
+ * Tulis berkas migrasi baru, mengembalikan nama berkasnya.
+ * Stempel waktu dinaikkan bila detik yang sama sudah terpakai.
+ */
+function buatBerkasMigrasi(string $namaMigrasi, string $tabel): string
+{
+    $waktu = time();
+
+    do {
+        $file = date('Y_m_d_His', $waktu) . '_' . str_snake($namaMigrasi) . '.sql';
+        $path = BASE_PATH . '/database/migrations/' . $file;
+        $waktu++;
+    } while (is_file($path));
+
+    file_put_contents($path, stubMigrasi($namaMigrasi, $tabel));
+
+    return $file;
+}
+
+/* ------------------------------------------------------------------ */
+/* Perintah                                                            */
+/* ------------------------------------------------------------------ */
+
+[$arguments, $opsi] = pisahOpsi($arguments);
+
+switch ($command) {
+
+    /* -------------------------------------------------------------- */
+    case 'serve':
+        $host = $arguments[0] ?? '127.0.0.1';
+        $port = $arguments[1] ?? '8000';
+
+        out();
+        out('  Sakuci Framework v' . Application::VERSION, 'bold');
+        out('  Server berjalan di http://' . $host . ':' . $port, 'green');
+        out('  Tekan Ctrl+C untuk berhenti.', 'gray');
+        out();
+
+        // -t public : document root diarahkan ke folder public supaya berkas
+        // statis (css, js, gambar) dilayani langsung oleh server.
+        passthru(sprintf(
+            '%s -S %s:%s -t %s %s',
+            escapeshellarg(PHP_BINARY),
+            $host,
+            $port,
+            escapeshellarg(BASE_PATH . '/public'),
+            escapeshellarg(BASE_PATH . '/server.php')
+        ));
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'migrate':
+        bootConfig($app);
+
+        $driver = Connection::driver();
+
+        Connection::statement(
+            $driver === 'mysql'
+                ? 'CREATE TABLE IF NOT EXISTS migrations (id INT AUTO_INCREMENT PRIMARY KEY, migration VARCHAR(255), ran_at VARCHAR(32))'
+                : 'CREATE TABLE IF NOT EXISTS migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, migration TEXT, ran_at TEXT)'
+        );
+
+        $done  = array_column(Connection::select('SELECT migration FROM migrations'), 'migration');
+        $files = glob(BASE_PATH . '/database/migrations/*.sql') ?: [];
+
+        sort($files);
+        out();
+        $count = 0;
+
+        foreach ($files as $file) {
+            $name = basename($file);
+
+            if (in_array($name, $done, true)) {
+                out('  - ' . $name . ' (dilewati)', 'gray');
+                continue;
+            }
+
+            $sql = (string) file_get_contents($file);
+
+            foreach (explode(';', $sql) as $statement) {
+                // Buang baris komentar, lalu lewati bila tidak ada perintah tersisa.
+                $statement = trim((string) preg_replace('/^\s*--.*$/m', '', $statement));
+
+                if ($statement === '') {
+                    continue;
+                }
+
+                try {
+                    Connection::statement($statement);
+                } catch (Throwable $e) {
+                    out();
+                    fail('✘ Gagal menjalankan ' . $name);
+                    fail('  ' . $e->getMessage());
+                    out();
+                    out('  Perbaiki SQL di berkas tersebut, lalu jalankan migrate lagi.', 'gray');
+                    out();
+                    exit(1);
+                }
+            }
+
+            Connection::statement(
+                'INSERT INTO migrations (migration, ran_at) VALUES (?, ?)',
+                [$name, date('Y-m-d H:i:s')]
+            );
+
+            ok('✔ ' . $name);
+            $count++;
+        }
+
+        out();
+        out('  Selesai. ' . $count . ' migrasi dijalankan.', 'cyan');
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'migrate:fresh':
+        bootConfig($app);
+
+        out();
+        out('  PERINGATAN: seluruh tabel beserta isinya akan dihapus.', 'yellow');
+
+        if (config('database.default') === 'sqlite') {
+            $database = config('database.connections.sqlite.database');
+
+            if (is_file($database)) {
+                unlink($database);
+                ok('✔ File database SQLite dihapus.');
+            } else {
+                out('  Tidak ada file database SQLite.', 'gray');
+            }
+        } else {
+            // MySQL: hapus semua tabel di dalam database yang dipakai.
+            Connection::statement('SET FOREIGN_KEY_CHECKS = 0');
+
+            $tabel = array_map(
+                fn (array $baris) => array_values($baris)[0],
+                Connection::select('SHOW TABLES')
+            );
+
+            foreach ($tabel as $nama) {
+                Connection::statement('DROP TABLE IF EXISTS `' . $nama . '`');
+                ok('✔ Tabel dihapus: ' . $nama);
+            }
+
+            Connection::statement('SET FOREIGN_KEY_CHECKS = 1');
+
+            if ($tabel === []) {
+                out('  Database sudah kosong.', 'gray');
+            }
+        }
+
+        out();
+        out('  Jalankan "php sakuci migrate" untuk membuat ulang tabel.', 'cyan');
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'db:check':
+        bootConfig($app);
+
+        $koneksi = config('database.default');
+        $conf    = config('database.connections.' . $koneksi, []);
+
+        out();
+        out('  Menguji koneksi database...', 'bold');
+        out();
+        out('    DB_CONNECTION : ' . $koneksi);
+
+        if ($koneksi === 'sqlite') {
+            out('    File          : ' . ($conf['database'] ?? '-'));
+        } else {
+            out('    Host          : ' . ($conf['host'] ?? '-') . ':' . ($conf['port'] ?? '-'));
+            out('    Database      : ' . ($conf['database'] ?? '-'));
+            out('    Username      : ' . ($conf['username'] ?? '-'));
+            out('    Password      : ' . (($conf['password'] ?? '') === '' ? '(kosong)' : '(terisi)'));
+        }
+
+        out();
+
+        try {
+            $pdo    = Connection::pdo();
+            $versi  = $pdo->getAttribute(PDO::ATTR_SERVER_VERSION);
+
+            ok('✔ Koneksi berhasil. Versi server: ' . $versi);
+
+            $tabel = $koneksi === 'sqlite'
+                ? Connection::select("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+                : Connection::select('SHOW TABLES');
+
+            $nama = array_map(fn (array $baris) => array_values($baris)[0], $tabel);
+
+            out('    Jumlah tabel  : ' . count($nama) . ($nama ? ' (' . implode(', ', $nama) . ')' : ''), 'gray');
+        } catch (Throwable $e) {
+            fail('✘ ' . $e->getMessage());
+        }
+
+        out();
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'route:list':
+        bootConfig($app);
+        require BASE_PATH . '/routes/web.php';
+
+        out();
+        out(sprintf('  %-8s %-32s %-22s %s', 'METHOD', 'URI', 'NAMA', 'ACTION'), 'bold');
+        out('  ' . str_repeat('-', 96), 'gray');
+
+        foreach (Route::router()->routes() as $method => $routes) {
+            if ($method === 'HEAD') {
+                continue;
+            }
+
+            foreach ($routes as $route) {
+                $action = $route->action;
+
+                if ($action instanceof Closure) {
+                    $action = 'Closure';
+                } elseif (is_array($action)) {
+                    $action = class_basename($action[0]) . '@' . ($action[1] ?? '__invoke');
+                }
+
+                out(sprintf(
+                    '  %-8s %-32s %-22s %s',
+                    $method,
+                    $route->uri,
+                    $route->name ?? '-',
+                    is_string($action) ? $action : 'Closure'
+                ));
+            }
+        }
+
+        out();
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'make:controller':
+        $name = str_studly($arguments[0] ?? '');
+
+        if ($name === '') {
+            fail('Nama controller wajib diisi. Contoh: php sakuci make:controller UserController');
+            break;
+        }
+
+        if (! str_ends_with($name, 'Controller')) {
+            $name .= 'Controller';
+        }
+
+        $path = BASE_PATH . '/app/Controllers/' . $name . '.php';
+
+        if (is_file($path)) {
+            fail($name . ' sudah ada.');
+            break;
+        }
+
+        file_put_contents($path, <<<PHP
+        <?php
+
+        namespace App\Controllers;
+
+        use Sakuci\Controller;
+        use Sakuci\Http\Request;
+
+        class {$name} extends Controller
+        {
+            public function index(Request \$request)
+            {
+                return view('welcome');
+            }
+        }
+
+        PHP);
+
+        ok('✔ Controller dibuat: app/Controllers/' . $name . '.php');
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'make:model':
+        bootConfig($app);
+
+        $name = str_studly($arguments[0] ?? '');
+
+        if ($name === '') {
+            fail('Nama model wajib diisi. Contoh: php sakuci make:model User');
+            out('    Tambahkan -m untuk sekalian membuat berkas migrasi.', 'gray');
+            break;
+        }
+
+        $path  = BASE_PATH . '/app/Models/' . $name . '.php';
+        $table = str_plural(str_snake($name));
+
+        if (is_file($path)) {
+            fail($name . ' sudah ada.');
+            break;
+        }
+
+        file_put_contents($path, <<<PHP
+        <?php
+
+        namespace App\Models;
+
+        use Sakuci\Database\Model;
+
+        class {$name} extends Model
+        {
+            protected static ?string \$table = '{$table}';
+
+            protected array \$fillable = [];
+        }
+
+        PHP);
+
+        ok('✔ Model dibuat: app/Models/' . $name . '.php');
+        out('    Tabel yang diasumsikan: ' . $table, 'gray');
+
+        // -m / --migration : sekalian buatkan berkas migrasinya.
+        if (adaOpsi($opsi, 'm', 'migration')) {
+            $migrasi = buatBerkasMigrasi('create_' . $table . '_table', $table);
+
+            out();
+            ok('✔ Migrasi dibuat: database/migrations/' . $migrasi);
+            out('    Sintaks ' . config('database.default') . ', tabel: ' . $table, 'gray');
+            out();
+            out('    Berikutnya: sesuaikan kolom di berkas itu, lalu jalankan', 'gray');
+            out('    php sakuci migrate', 'cyan');
+        }
+
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'make:view':
+        $name = $arguments[0] ?? '';
+
+        if ($name === '') {
+            fail('Nama view wajib diisi. Contoh: php sakuci make:view users.index');
+            break;
+        }
+
+        $path = BASE_PATH . '/resources/views/' . str_replace('.', '/', $name) . '.batara.php';
+
+        if (is_file($path)) {
+            fail($name . ' sudah ada.');
+            break;
+        }
+
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0777, true);
+        }
+
+        file_put_contents($path, "@extends('layouts.app')\n\n@section('content')\n\n    <h1>" . $name . "</h1>\n\n@endsection\n");
+
+        ok('✔ View dibuat: resources/views/' . str_replace('.', '/', $name) . '.batara.php');
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'make:migration':
+        $name = $arguments[0] ?? '';
+
+        if ($name === '') {
+            fail('Nama migrasi wajib diisi. Contoh: php sakuci make:migration create_users_table');
+            break;
+        }
+
+        bootConfig($app);
+
+        // Tebak nama tabel dari "create_buku_table" -> "buku".
+        $tabel = preg_replace('/^create_|_table$/', '', str_snake($name)) ?: 'nama_tabel';
+
+        $file = buatBerkasMigrasi($name, $tabel);
+
+        ok('✔ Migrasi dibuat: database/migrations/' . $file);
+        out('    Tabel: ' . $tabel . ' (sintaks ' . config('database.default') . ')', 'gray');
+        break;
+
+    /* -------------------------------------------------------------- */
+    case 'view:clear':
+        $files = glob(BASE_PATH . '/storage/framework/views/*.php') ?: [];
+
+        foreach ($files as $file) {
+            unlink($file);
+        }
+
+        ok('✔ ' . count($files) . ' file cache view dihapus.');
+        break;
+
+    /* -------------------------------------------------------------- */
+    default:
+        out();
+        out('  Sakuci Framework v' . Application::VERSION, 'bold');
+        out('  Kerangka PHP ringan bergaya Laravel — tanpa Composer.', 'gray');
+        out();
+        out('  Penggunaan: php sakuci <perintah> [argumen]', 'yellow');
+        out();
+        out('  Perintah tersedia:', 'bold');
+
+        foreach ([
+            'serve [host] [port]'    => 'Jalankan server pengembangan (default 127.0.0.1:8000)',
+            'migrate'                => 'Jalankan file .sql di database/migrations',
+            'migrate:fresh'          => 'Hapus SEMUA tabel lalu mulai dari nol',
+            'db:check'               => 'Uji koneksi database sesuai file .env',
+            'route:list'             => 'Tampilkan seluruh route terdaftar',
+            'make:controller Nama'   => 'Buat controller baru',
+            'make:model Nama [-m]'   => 'Buat model baru (-m sekalian buat migrasinya)',
+            'make:view nama.view'    => 'Buat file view baru',
+            'make:migration nama'    => 'Buat file migrasi baru',
+            'view:clear'             => 'Bersihkan cache view',
+        ] as $name => $description) {
+            out(sprintf('    %-24s %s', $name, $description));
+        }
+
+        out();
+}

@@ -28,8 +28,8 @@
                 <span>🎓 Uji CRUD Mahasiswa</span>
                 <i class="bi bi-arrow-right"></i>
             </a>
-            <a href="/halo" class="btn btn-outline-secondary text-light btn-lg px-4 py-2.5 border-secondary d-flex align-items-center gap-2" style="background: rgba(30, 41, 59, 0.5);">
-                <span>⚡ Test Rute /halo</span>
+            <a href="/docs" class="btn btn-outline-secondary text-light btn-lg px-4 py-2.5 border-secondary d-flex align-items-center gap-2" style="background: rgba(30, 41, 59, 0.5);">
+                <span>📖 Dokumentasi Framework (/docs)</span>
             </a>
         </div>
 

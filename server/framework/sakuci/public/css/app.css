@@ -1,0 +1,258 @@
+﻿/*
+| Lapisan tema di atas Bootstrap.
+| Bootstrap dimuat lebih dulu, file ini hanya menimpa seperlunya.
+*/
+
+:root {
+    --brand: #c2410c;
+    --brand-dark: #9a3412;
+    --brand-subtle: #fff7ed;
+}
+
+body {
+    font-size: 15.5px;
+}
+
+/* Logo kotak di navbar */
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--brand);
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* Navbar -- link aktif vs non-aktif */
+.navbar-nav .nav-link {
+    position: relative;
+    font-weight: 500;
+    color: var(--bs-secondary-color);
+    padding-block: .5rem;
+    transition: color .15s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: var(--brand);
+}
+
+.navbar-nav .nav-link.active {
+    color: var(--brand);
+    font-weight: 700;
+}
+
+.navbar-nav .nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: .5rem;
+    right: .5rem;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--brand);
+}
+
+/* Logo navbar merangkap tombol toggle tema gelap/terang. Titik tengah
+   (hijau/merah) tetap menunjukkan status koneksi database seperti biasa;
+   cincin luarnya yang berubah warna mengikuti tema aktif. */
+.logo-toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    line-height: 0;
+    border-radius: 50%;
+    transition: transform .15s ease;
+}
+
+.logo-toggle:hover {
+    transform: scale(1.06);
+}
+
+.logo-toggle:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+}
+
+.logo-ring {
+    fill: #000000;
+    transition: fill .15s ease;
+}
+
+[data-bs-theme="dark"] .logo-ring {
+    fill: #ffffff;
+}
+
+/* Tombol warna khas Sakuci */
+.btn-brand {
+    background-color: var(--brand);
+    border-color: var(--brand);
+    color: #fff;
+}
+
+.btn-brand:hover,
+.btn-brand:focus,
+.btn-brand:active {
+    background-color: var(--brand-dark);
+    border-color: var(--brand-dark);
+    color: #fff;
+}
+
+.btn-outline-brand {
+    border-color: var(--brand);
+    color: var(--brand);
+}
+
+.btn-outline-brand:hover {
+    background-color: var(--brand);
+    color: #fff;
+}
+
+.text-brand   { color: var(--brand) !important; }
+.bg-brand-subtle { background-color: var(--brand-subtle) !important; }
+
+.badge-brand {
+    background-color: var(--brand-subtle);
+    color: var(--brand-dark);
+    font-weight: 600;
+}
+
+/* Blok kode */
+pre.code {
+    margin: 0;
+    padding: 16px;
+    border-radius: 10px;
+    background: #0f172a;
+    color: #e2e8f0;
+    font: 12.5px/1.7 ui-monospace, Consolas, "Courier New", monospace;
+    overflow-x: auto;
+}
+
+pre.code .cmt { color: #64748b; }
+
+code.inline {
+    padding: 2px 6px;
+    border-radius: 5px;
+    background: #eef0f2;
+    color: #0f172a;
+    font-size: 0.875em;
+}
+
+/* Nomor langkah */
+.step-number {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--brand-subtle);
+    color: var(--brand-dark);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* Kotak pratinjau komponen di halaman /docs */
+.demo-preview {
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.demo-preview-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 6px 12px;
+    border-bottom: 1px dashed #cbd5e1;
+}
+
+.demo-preview-body {
+    padding: 18px;
+    background: #fff;
+}
+
+/* Kotak warna untuk contoh grid & spacing di /docs */
+.demo-box {
+    padding: .6rem .5rem;
+    background: var(--brand-subtle);
+    border: 1px solid #fdba8c;
+    border-radius: 6px;
+    color: var(--brand-dark);
+    font-size: .8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.demo-box-alt {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    color: #3730a3;
+}
+
+/* Halaman error */
+.error-code {
+    font-size: 72px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--brand);
+}
+
+/* Varian tema gelap untuk komponen yang warnanya di-hardcode di atas */
+[data-bs-theme="dark"] code.inline {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+/* pre.code sengaja navy gelap di mode terang (biar kontras) -- tapi di mode
+   gelap dia harus ikut warna permukaan Bootstrap, bukan navy sendiri. */
+[data-bs-theme="dark"] pre.code {
+    background: var(--bs-tertiary-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] pre.code .cmt {
+    color: var(--bs-secondary-color);
+}
+
+[data-bs-theme="dark"] .demo-preview {
+    border-color: #334155;
+}
+
+[data-bs-theme="dark"] .demo-preview-label {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+[data-bs-theme="dark"] .demo-preview-body {
+    background: var(--bs-body-bg);
+}
+
+[data-bs-theme="dark"] .badge-brand,
+[data-bs-theme="dark"] .bg-brand-subtle,
+[data-bs-theme="dark"] .step-number {
+    background-color: rgba(194, 65, 12, .18) !important;
+    color: #fb923c;
+}
+
+[data-bs-theme="dark"] .demo-box {
+    background-color: rgba(194, 65, 12, .18);
+    border-color: rgba(194, 65, 12, .4);
+    color: #fb923c;
+}
+
+[data-bs-theme="dark"] .demo-box-alt {
+    background-color: rgba(99, 102, 241, .18);
+    border-color: rgba(99, 102, 241, .4);
+    color: #a5b4fc;
+}
+

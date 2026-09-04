@@ -16,7 +16,7 @@
                     <a class="nav-link text-sky-400 fw-semibold px-2" href="/mahasiswa"><i class="bi bi-mortarboard me-1"></i> Data Mahasiswa (CRUD)</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link text-secondary hover-white px-2" href="/halo"><i class="bi bi-send me-1"></i> Test Route /halo</a>
+                    <a class="nav-link text-secondary hover-white px-2" href="/docs"><i class="bi bi-book me-1"></i> Dokumentasi (/docs)</a>
                 </li>
             </ul>
             <div class="d-flex align-items-center gap-2">

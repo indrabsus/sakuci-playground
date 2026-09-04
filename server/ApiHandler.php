@@ -72,9 +72,9 @@ class ApiHandler
                             'success' => true,
                             'mode' => $mode,
                             'files' => $defaultFiles,
-                            'folders' => ($mode === 'framework') ? ['app', 'app/Controllers', 'app/Models', 'resources', 'resources/views', 'resources/views/layouts', 'resources/views/partials', 'resources/views/mahasiswa', 'routes'] : [],
+                            'folders' => ($mode === 'framework') ? WorkspaceManager::getDefaultFrameworkFolders() : [],
                             'active_file' => ($mode === 'framework') ? 'routes/web.php' : 'index.php',
-                            'open_tabs' => ($mode === 'framework') ? ['.env', 'routes/web.php', 'app/Controllers/MahasiswaController.php'] : ['index.php'],
+                            'open_tabs' => ($mode === 'framework') ? ['routes/web.php', 'app/Controllers/MahasiswaController.php', 'resources/views/welcome.sakuci.php'] : ['index.php'],
                             'is_guest' => true
                         ]);
                     }

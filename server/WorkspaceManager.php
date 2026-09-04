@@ -18,6 +18,49 @@ class WorkspaceManager
     }
 
     /**
+     * Dapatkan folder default untuk mode Sakuci Framework MVC
+     */
+    public static function getDefaultFrameworkFolders(): array
+    {
+        return [
+            'app',
+            'app/Controllers',
+            'app/Controllers/Core',
+            'app/Middleware',
+            'app/Models',
+            'config',
+            'core',
+            'core/Database',
+            'core/Exceptions',
+            'core/Http',
+            'core/Routing',
+            'core/Validation',
+            'database',
+            'database/migrations',
+            'public',
+            'public/css',
+            'public/js',
+            'resources',
+            'resources/views',
+            'resources/views/core',
+            'resources/views/core/admin',
+            'resources/views/core/admin/roles',
+            'resources/views/core/admin/users',
+            'resources/views/core/auth',
+            'resources/views/core/docs',
+            'resources/views/core/errors',
+            'resources/views/layouts',
+            'resources/views/partials',
+            'resources/views/mahasiswa',
+            'routes',
+            'storage',
+            'storage/framework',
+            'storage/framework/views',
+            'storage/logs'
+        ];
+    }
+
+    /**
      * Dapatkan file default untuk mode Sakuci Framework MVC
      */
     public static function getDefaultFrameworkFiles(): array
@@ -25,41 +68,40 @@ class WorkspaceManager
         $base = __DIR__ . '/framework/sakuci';
         $files = [];
 
-        // .env
-        $envPath = $base . '/.env';
-        if (file_exists($envPath)) {
-            $files['.env'] = file_get_contents($envPath);
-        }
+        $addFile = function($relPath, $diskPath) use (&$files) {
+            if (file_exists($diskPath)) {
+                $files[$relPath] = file_get_contents($diskPath);
+            }
+        };
 
-        // routes/web.php
-        $routePath = $base . '/routes_default/web.php';
-        if (file_exists($routePath)) {
-            $files['routes/web.php'] = file_get_contents($routePath);
-        }
-
-        // app/Controllers/MahasiswaController.php
-        $controllerPath = $base . '/app_default/Controllers/MahasiswaController.php';
-        if (file_exists($controllerPath)) {
-            $files['app/Controllers/MahasiswaController.php'] = file_get_contents($controllerPath);
-        }
-
-        // app/Models/Mahasiswa.php
-        $modelPath = $base . '/app_default/Models/Mahasiswa.php';
-        if (file_exists($modelPath)) {
-            $files['app/Models/Mahasiswa.php'] = file_get_contents($modelPath);
-        }
-
-        // resources/views/...
-        $viewsBase = $base . '/resources_default/views';
-        if (is_dir($viewsBase)) {
-            $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($viewsBase, \FilesystemIterator::SKIP_DOTS));
-            foreach ($iterator as $file) {
-                if ($file->isFile()) {
-                    $relPath = str_replace('\\', '/', substr($file->getPathname(), strlen($viewsBase) + 1));
-                    $files['resources/views/' . $relPath] = file_get_contents($file->getPathname());
+        $scanDir = function($diskDir, $prefix) use (&$files, &$scanDir) {
+            if (!is_dir($diskDir)) return;
+            $items = scandir($diskDir);
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') continue;
+                $diskPath = $diskDir . '/' . $item;
+                $relPath = ($prefix !== '') ? ($prefix . '/' . $item) : $item;
+                if (is_dir($diskPath)) {
+                    $scanDir($diskPath, $relPath);
+                } else {
+                    $files[$relPath] = file_get_contents($diskPath);
                 }
             }
-        }
+        };
+
+        $addFile('.env', $base . '/.env');
+        $addFile('routes/web.php', $base . '/routes_default/web.php');
+        $addFile('sakuci', $base . '/sakuci');
+        $addFile('server.php', $base . '/server.php');
+        $addFile('README.md', $base . '/README.md');
+        $addFile('TUTORIAL.md', $base . '/TUTORIAL.md');
+
+        $scanDir($base . '/app_default', 'app');
+        $scanDir($base . '/config', 'config');
+        $scanDir($base . '/core', 'core');
+        $scanDir($base . '/database', 'database');
+        $scanDir($base . '/public', 'public');
+        $scanDir($base . '/resources_default/views', 'resources/views');
 
         return $files;
     }

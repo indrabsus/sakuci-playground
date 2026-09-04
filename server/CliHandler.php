@@ -211,7 +211,7 @@ TEXT;
         if (empty($routes)) {
             $routes = [
                 ['method' => 'GET', 'uri' => '/', 'action' => 'HomeController@index'],
-                ['method' => 'GET', 'uri' => '/halo', 'action' => 'Closure'],
+                ['method' => 'GET', 'uri' => '/docs', 'action' => 'DocsController@index'],
                 ['method' => 'GET', 'uri' => '/mahasiswa', 'action' => 'MahasiswaController@index'],
                 ['method' => 'GET', 'uri' => '/mahasiswa/tambah', 'action' => 'MahasiswaController@create'],
                 ['method' => 'POST', 'uri' => '/mahasiswa/simpan', 'action' => 'MahasiswaController@store'],
