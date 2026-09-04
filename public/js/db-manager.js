@@ -125,7 +125,7 @@ window.DbManager = {
                         <span class="text-sm font-semibold text-white font-mono flex items-center gap-1.5">
                             📊 Tabel: <span class="text-sky-400">${tableName}</span>
                         </span>
-                        <span class="text-xs text-gray-400 font-mono">(${data.total} total data)</span>
+                        <span class="text-xs text-gray-400 font-mono">(${data.total ?? data.total_rows ?? 0} total data)</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="DbManager.copySelectQuery('${tableName}')" class="text-xs text-sky-400 hover:text-sky-300 px-2 py-1 bg-sky-950/40 rounded border border-sky-800 transition">
@@ -166,7 +166,8 @@ window.DbManager = {
                 `;
 
                 // Pagination
-                const totalPages = Math.ceil(data.total / this.pageSize);
+                const totalCount = (data.total !== undefined) ? data.total : ((data.total_rows !== undefined) ? data.total_rows : (data.rows ? data.rows.length : 0));
+                const totalPages = Math.ceil(totalCount / this.pageSize);
                 if (totalPages > 1) {
                     html += `
                         <div class="flex items-center justify-between p-2.5 border-t border-[#30363d] bg-[#161b22] text-xs">

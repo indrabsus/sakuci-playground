@@ -301,6 +301,25 @@ class Database
         }
     }
 
+    public static function resolveTableName(string $tableName): string
+    {
+        $user = Auth::user();
+        $userId = $user ? (int)$user['id'] : 0;
+        if ($userId > 0 && in_array(strtolower($tableName), ['mahasiswa', 'kategori', 'produk', 'transaksi'])) {
+            $userTable = "u{$userId}_{$tableName}";
+            $pdo = self::getConnection();
+            $driver = self::$activeDriver;
+            if ($driver === 'mysql') {
+                $exists = $pdo->query("SHOW TABLES LIKE '{$userTable}'")->fetch();
+                if ($exists) return $userTable;
+            } else {
+                $exists = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$userTable}'")->fetch();
+                if ($exists) return $userTable;
+            }
+        }
+        return $tableName;
+    }
+
     public static function getTables(): array
     {
         try {
@@ -308,39 +327,34 @@ class Database
             $driver = self::$activeDriver;
             $tables = [];
 
-            if ($driver === 'mysql') {
-                $stmt = $pdo->query("SHOW TABLES");
-                $results = $stmt->fetchAll(PDO::FETCH_NUM);
-                foreach ($results as $r) {
-                    $tableName = $r[0];
-                    // Sembunyikan tabel sistem dari viewer latihan agar siswa fokus pada tabel latihan
-                    if (in_array($tableName, ['users', 'user_sessions', 'user_files', 'user_preferences'])) {
-                        continue;
-                    }
-                    $countStmt = $pdo->query("SELECT COUNT(*) FROM `{$tableName}`");
-                    $realCount = $countStmt ? (int)$countStmt->fetchColumn() : 0;
-                    $tables[] = [
-                        'name' => $tableName,
-                        'rows' => $realCount,
-                        'size_kb' => 0
-                    ];
+            $user = Auth::user();
+            $userId = $user ? (int)$user['id'] : 0;
+
+            if ($userId > 0) {
+                self::ensureUserPracticeTables($userId);
+            }
+
+            $baseTables = ['mahasiswa', 'kategori', 'produk', 'transaksi'];
+            $quote = ($driver === 'mysql') ? '`' : '"';
+
+            foreach ($baseTables as $tbl) {
+                $targetTable = ($userId > 0) ? "u{$userId}_{$tbl}" : $tbl;
+
+                if ($driver === 'mysql') {
+                    $exists = $pdo->query("SHOW TABLES LIKE '{$targetTable}'")->fetch();
+                    if (!$exists) $targetTable = $tbl;
+                } else {
+                    $exists = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$targetTable}'")->fetch();
+                    if (!$exists) $targetTable = $tbl;
                 }
-            } else {
-                $stmt = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name");
-                $results = $stmt->fetchAll();
-                foreach ($results as $r) {
-                    $tableName = $r['name'];
-                    if (in_array($tableName, ['users', 'user_sessions', 'user_files', 'user_preferences'])) {
-                        continue;
-                    }
-                    $countStmt = $pdo->query("SELECT COUNT(*) FROM \"{$tableName}\"");
-                    $realCount = $countStmt ? (int)$countStmt->fetchColumn() : 0;
-                    $tables[] = [
-                        'name' => $tableName,
-                        'rows' => $realCount,
-                        'size_kb' => 0
-                    ];
-                }
+
+                $countStmt = $pdo->query("SELECT COUNT(*) FROM {$quote}{$targetTable}{$quote}");
+                $realCount = $countStmt ? (int)$countStmt->fetchColumn() : 0;
+                $tables[] = [
+                    'name' => $tbl,
+                    'rows' => $realCount,
+                    'size_kb' => 0
+                ];
             }
 
             return ['success' => true, 'tables' => $tables, 'driver' => $driver];
@@ -355,9 +369,10 @@ class Database
             $pdo = self::getConnection();
             $driver = self::$activeDriver;
             $columns = [];
+            $actualTable = self::resolveTableName($tableName);
 
             if ($driver === 'mysql') {
-                $safeName = str_replace('`', '``', $tableName);
+                $safeName = str_replace('`', '``', $actualTable);
                 $stmt = $pdo->query("DESCRIBE `{$safeName}`");
                 foreach ($stmt->fetchAll() as $col) {
                     $columns[] = [
@@ -370,7 +385,7 @@ class Database
                     ];
                 }
             } else {
-                $safeName = str_replace('"', '""', $tableName);
+                $safeName = str_replace('"', '""', $actualTable);
                 $stmt = $pdo->query("PRAGMA table_info(\"{$safeName}\")");
                 foreach ($stmt->fetchAll() as $col) {
                     $columns[] = [
@@ -395,8 +410,9 @@ class Database
         try {
             $pdo = self::getConnection();
             $driver = self::$activeDriver;
+            $actualTable = self::resolveTableName($tableName);
             $quote = ($driver === 'mysql') ? '`' : '"';
-            $safeName = str_replace($quote, $quote . $quote, $tableName);
+            $safeName = str_replace($quote, $quote . $quote, $actualTable);
 
             $countStmt = $pdo->query("SELECT COUNT(*) FROM {$quote}{$safeName}{$quote}");
             $totalRows = (int)$countStmt->fetchColumn();
@@ -413,6 +429,7 @@ class Database
                 'table' => $tableName,
                 'columns' => $columns,
                 'rows' => $rows,
+                'total' => $totalRows,
                 'total_rows' => $totalRows,
                 'page' => $page,
                 'per_page' => $perPage,
@@ -435,11 +452,20 @@ class Database
                 return ['success' => false, 'message' => 'Query tidak boleh kosong.'];
             }
 
+            $user = Auth::user();
+            $userId = $user ? (int)$user['id'] : 0;
+            if ($userId > 0) {
+                $baseTables = ['mahasiswa', 'kategori', 'produk', 'transaksi'];
+                foreach ($baseTables as $t) {
+                    $trimmed = preg_replace('/\b(FROM|INTO|UPDATE|JOIN|TABLE)\s+[`"]?' . $t . '[`"]?\b/i', '$1 u' . $userId . '_' . $t, $trimmed);
+                }
+            }
+
             $upper = strtoupper($trimmed);
             $isSelect = str_starts_with($upper, 'SELECT') || 
                         str_starts_with($upper, 'SHOW') || 
-                        str_starts_with($upper, 'DESC') ||
-                        str_starts_with($upper, 'PRAGMA') ||
+                        str_starts_with($upper, 'DESC') || 
+                        str_starts_with($upper, 'PRAGMA') || 
                         str_starts_with($upper, 'EXPLAIN');
 
             if ($isSelect) {
@@ -496,12 +522,28 @@ class Database
                     $exists = $pdo->query("SHOW TABLES LIKE '{$userTable}'")->fetch();
                     if (!$exists) {
                         $pdo->exec("CREATE TABLE IF NOT EXISTS `{$userTable}` LIKE `{$tbl}`;");
-                        $pdo->exec("INSERT INTO `{$userTable}` SELECT * FROM `{$tbl}`;");
+                        $pdo->exec("INSERT IGNORE INTO `{$userTable}` SELECT * FROM `{$tbl}`;");
+                    } else {
+                        $cnt = (int)$pdo->query("SELECT COUNT(*) FROM `{$userTable}`")->fetchColumn();
+                        if ($cnt === 0) {
+                            $baseCnt = (int)$pdo->query("SELECT COUNT(*) FROM `{$tbl}`")->fetchColumn();
+                            if ($baseCnt > 0) {
+                                $pdo->exec("INSERT IGNORE INTO `{$userTable}` SELECT * FROM `{$tbl}`;");
+                            }
+                        }
                     }
                 } else {
                     $exists = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='{$userTable}'")->fetch();
                     if (!$exists) {
                         $pdo->exec("CREATE TABLE IF NOT EXISTS \"{$userTable}\" AS SELECT * FROM \"{$tbl}\";");
+                    } else {
+                        $cnt = (int)$pdo->query("SELECT COUNT(*) FROM \"{$userTable}\"")->fetchColumn();
+                        if ($cnt === 0) {
+                            $baseCnt = (int)$pdo->query("SELECT COUNT(*) FROM \"{$tbl}\"")->fetchColumn();
+                            if ($baseCnt > 0) {
+                                $pdo->exec("INSERT INTO \"{$userTable}\" SELECT * FROM \"{$tbl}\";");
+                            }
+                        }
                     }
                 }
             }
