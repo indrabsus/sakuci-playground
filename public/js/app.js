@@ -953,6 +953,31 @@ window.App = {
         CodeEditor.setCode(this.files[this.activeFile] ?? '', this.activeFile);
     },
 
+    clearCache: async function () {
+        if (!confirm('Bersihkan seluruh cache browser (LocalStorage, file tersimpan lokal, sesi offline) & server lalu muat ulang playground?')) {
+            return;
+        }
+
+        try {
+            this.setCloudSyncBadge('Membersihkan cache...', 'amber');
+            await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
+        } catch (e) {}
+
+        try {
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('sakuci_') || key.includes('playground') || key.includes('framework') || key.includes('native'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+            sessionStorage.clear();
+        } catch (e) {}
+
+        window.location.href = window.location.pathname + '?refresh=' + Date.now();
+    },
+
     // ==========================================
     // PENYIMPANAN & SINKRONISASI BERKAS
     // ==========================================

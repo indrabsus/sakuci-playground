@@ -212,6 +212,33 @@ class ApiHandler
                     echo json_encode($result);
                     break;
 
+                case '/api/cache/clear':
+                    if ($method !== 'POST') {
+                        self::error('Method not allowed', 405);
+                    }
+                    $tempDir = __DIR__ . '/../data/temp';
+                    if (is_dir($tempDir)) {
+                        $items = glob($tempDir . '/*');
+                        if (is_array($items)) {
+                            foreach ($items as $item) {
+                                if (is_dir($item)) {
+                                    $files = new \RecursiveIteratorIterator(
+                                        new \RecursiveDirectoryIterator($item, \FilesystemIterator::SKIP_DOTS),
+                                        \RecursiveIteratorIterator::CHILD_FIRST
+                                    );
+                                    foreach ($files as $f) {
+                                        $f->isDir() ? @rmdir($f->getRealPath()) : @unlink($f->getRealPath());
+                                    }
+                                    @rmdir($item);
+                                } else {
+                                    @unlink($item);
+                                }
+                            }
+                        }
+                    }
+                    echo json_encode(['success' => true, 'message' => 'Cache server dan berkas sementara berhasil dibersihkan!']);
+                    break;
+
                 default:
                     self::error('Endpoint API tidak ditemukan: ' . $path, 404);
             }
