@@ -12,7 +12,9 @@ class SeedData
         try {
             $pdo = Database::getConnection();
             $driver = Database::getActiveDriver();
-            $pdo->beginTransaction();
+            if ($driver !== 'mysql') {
+                $pdo->beginTransaction();
+            }
 
             if ($driver === 'mysql') {
                 $pdo->exec("SET FOREIGN_KEY_CHECKS = 0;");
@@ -172,7 +174,9 @@ class SeedData
                 $stmtTrx->execute($trx);
             }
 
-            $pdo->commit();
+            if ($pdo->inTransaction()) {
+                $pdo->commit();
+            }
 
             // Sync ke tabel latihan user yang sedang aktif jika ada
             if ($driver === 'mysql') {
