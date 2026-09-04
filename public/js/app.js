@@ -40,21 +40,25 @@ DB_PASSWORD=
     'routes/web.php': `<?php
 
 use Sakuci\\Route;
-use App\\Controllers\\HomeController;
 use App\\Controllers\\MahasiswaController;
+use App\\Controllers\\Core\\AuthController;
+use App\\Controllers\\Core\\DashboardController;
+use App\\Controllers\\Core\\DocsController;
+use App\\Controllers\\Core\\RoleController;
+use App\\Controllers\\Core\\UserController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes - Sakuci Framework
+| Route Web - Sakuci Framework
 |--------------------------------------------------------------------------
-| Daftarkan seluruh route aplikasi Anda di sini.
+| Daftarkan seluruh route aplikasi di sini.
 */
 
-Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
 
-Route::get('/halo', function () {
-    return '<h1>Halo dari Sakuci Framework! 🚀</h1><p>Route closure bekerja dengan sempurna.</p>';
-});
+Route::get('/docs', [DocsController::class, 'index'])->name('docs');
 
 // =========================================================================
 // CRUD DATA MAHASISWA (MahasiswaController)
@@ -65,6 +69,18 @@ Route::post('/mahasiswa/simpan', [MahasiswaController::class, 'store'])->name('m
 Route::get('/mahasiswa/{id}/edit', [MahasiswaController::class, 'edit'])->name('mahasiswa.edit');
 Route::post('/mahasiswa/{id}/update', [MahasiswaController::class, 'update'])->name('mahasiswa.update');
 Route::get('/mahasiswa/{id}/hapus', [MahasiswaController::class, 'destroy'])->name('mahasiswa.destroy');
+
+// =========================================================================
+// AUTHENTIKASI & DASHBOARD
+// =========================================================================
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
+Route::post('/login', [AuthController::class, 'login'])->name('login.attempt')->middleware('guest');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
+
+Route::get('/register', [AuthController::class, 'showRegister'])->name('register')->middleware('guest');
+Route::post('/register', [AuthController::class, 'register'])->name('register.attempt')->middleware('guest');
+
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')->middleware('auth');
 `,
     'app/Controllers/HomeController.php': `<?php
 
@@ -983,6 +999,14 @@ window.App = {
                         if (!parsed['.env']) {
                             parsed['.env'] = DEFAULT_FRAMEWORK_FILES['.env'];
                         }
+                        // Pulihkan otomatis jika routes/web.php tidak sengaja tertimpa oleh MahasiswaController
+                        if (parsed['routes/web.php'] && (parsed['routes/web.php'].includes('class MahasiswaController') || !parsed['routes/web.php'].includes('Route::'))) {
+                            parsed['routes/web.php'] = DEFAULT_FRAMEWORK_FILES['routes/web.php'];
+                        }
+                    } else {
+                        if (parsed['index.php'] && parsed['index.php'].includes('class MahasiswaController')) {
+                            parsed['index.php'] = DEFAULT_NATIVE_FILES['index.php'];
+                        }
                     }
 
                     this.files = parsed;
@@ -1574,10 +1598,13 @@ window.App = {
     openFile: function (path) {
         if (this.files[path] === undefined) return;
 
-        if (this.activeFile && this.files[this.activeFile] !== undefined) {
-            const currentCode = CodeEditor.getCode();
-            if (currentCode !== null) {
-                this.files[this.activeFile] = currentCode;
+        // Hanya simpan file sebelumnya jika berganti file dan editor tidak sedang di-set programatik
+        if (this.activeFile && this.activeFile !== path && this.files[this.activeFile] !== undefined) {
+            if (!CodeEditor.isSettingCode) {
+                const currentCode = CodeEditor.getCode();
+                if (currentCode !== null) {
+                    this.files[this.activeFile] = currentCode;
+                }
             }
         }
 

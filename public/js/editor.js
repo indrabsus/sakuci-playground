@@ -5,6 +5,7 @@
 window.CodeEditor = {
     editor: null,
     isMonacoLoaded: false,
+    isSettingCode: false,
 
     detectLanguage: function (filename) {
         if (!filename) return 'php';
@@ -179,6 +180,7 @@ window.CodeEditor = {
 
         // Deteksi perubahan kode untuk auto-save ke cloud
         this.editor.onDidChangeModelContent(() => {
+            if (this.isSettingCode) return;
             if (window.App && typeof window.App.onCodeChange === 'function') {
                 window.App.onCodeChange();
             }
@@ -231,18 +233,25 @@ window.CodeEditor = {
 
     setCode: function (code, filename) {
         const safeCode = (code !== null && code !== undefined) ? String(code) : '';
-        if (this.editor) {
-            this.editor.setValue(safeCode);
-            if (filename && window.monaco) {
-                const lang = this.detectLanguage(filename);
-                const model = this.editor.getModel();
-                if (model) {
-                    monaco.editor.setModelLanguage(model, lang);
+        this.isSettingCode = true;
+        try {
+            if (this.editor) {
+                this.editor.setValue(safeCode);
+                if (filename && window.monaco) {
+                    const lang = this.detectLanguage(filename);
+                    const model = this.editor.getModel();
+                    if (model) {
+                        monaco.editor.setModelLanguage(model, lang);
+                    }
                 }
+            } else {
+                const fallback = document.getElementById('fallback-editor');
+                if (fallback) fallback.value = safeCode;
             }
-        } else {
-            const fallback = document.getElementById('fallback-editor');
-            if (fallback) fallback.value = safeCode;
+        } finally {
+            setTimeout(() => {
+                this.isSettingCode = false;
+            }, 30);
         }
     },
 
