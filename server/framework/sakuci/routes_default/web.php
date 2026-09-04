@@ -25,6 +25,10 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::get('/halo', function () {
+    return response("<!doctype html><html lang='id' data-bs-theme='dark'><head><meta charset='utf-8'><title>Test Route /halo</title><link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css' rel='stylesheet'></head><body class='p-5 text-center bg-dark text-light'><div class='card card-body bg-dark border-secondary mx-auto shadow mt-5' style='max-width: 500px;'><h2 class='text-info mb-3'>⚡ Halo dari Sakuci Framework!</h2><p class='text-secondary'>Rute sederhana <code>/halo</code> berjalan lancar langsung dari framework.</p><div class='mt-4'><a href='/' class='btn btn-outline-light btn-sm me-2'>&larr; Kembali ke Beranda</a><a href='/mahasiswa' class='btn btn-primary btn-sm'>Buka CRUD Mahasiswa</a></div></div></body></html>");
+});
+
 Route::get('/docs', [DocsController::class, 'index'])->name('docs');
 
 // =========================================================================

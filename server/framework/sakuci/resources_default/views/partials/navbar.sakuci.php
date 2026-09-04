@@ -1,85 +1,30 @@
-<nav class="navbar navbar-expand-lg bg-body border-bottom sticky-top">
+<nav class="navbar navbar-expand-lg glass-nav sticky-top shadow-sm">
     <div class="container">
-        <div class="d-flex align-items-center gap-2">
-            @php
-                $dbConnected = false;
-                try {
-                    \Sakuci\Database\Connection::pdo();
-                    $dbConnected = true;
-                } catch (\Throwable $e) {
-                    $dbConnected = false;
-                }
-            @endphp
-            <button id="themeToggle" type="button" class="logo-toggle"
-                    aria-label="Ganti tema terang/gelap (status database: {{ $dbConnected ? 'terhubung' : 'tidak terhubung' }})"
-                    title="Ganti tema terang/gelap">
-                <svg width="28" height="28" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" style="display: block;" aria-hidden="true">
-                    <circle class="logo-ring" cx="16" cy="16" r="15"/>
-                    <circle cx="16" cy="16" r="9" fill="{{ $dbConnected ? '#28a745' : '#dc3545' }}"/>
-                </svg>
-            </button>
-            <a class="navbar-brand fw-semibold m-0" href="{{ route('home') }}">{{ config('app.name') }}</a>
-        </div>
-
-        <button class="navbar-toggler border-0" type="button"
-                data-bs-toggle="collapse" data-bs-target="#menuUtama"
-                aria-controls="menuUtama" aria-expanded="false" aria-label="Buka menu">
+        <a class="navbar-brand fw-bold text-white d-flex align-items-center gap-2" href="/">
+            <span class="d-inline-flex align-items-center justify-content-center rounded p-1 text-xs" style="width: 28px; height: 28px; background: linear-gradient(135deg, #0284c7, #4f46e5);">⚡</span>
+            <span class="tracking-tight font-monospace">Sakuci<span class="text-sky-400">Framework</span></span>
+        </a>
+        <button class="navbar-toggler border-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
             <span class="navbar-toggler-icon"></span>
         </button>
-
-        {{-- Tambahkan menu aplikasi Anda di sini --}}
-        <div class="collapse navbar-collapse" id="menuUtama">
-            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-1">
+        <div class="collapse navbar-collapse" id="navContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-1">
                 <li class="nav-item">
-                    <a class="nav-link {{ is_route('home') ? 'active' : '' }}" href="{{ route('home') }}">Beranda</a>
+                    <a class="nav-link text-white px-2" href="/"><i class="bi bi-house-door me-1 text-sky-400"></i> Beranda</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link fw-semibold text-primary {{ is_route('mahasiswa.index', 'mahasiswa.create', 'mahasiswa.edit') ? 'active' : '' }}" href="/mahasiswa">Data Mahasiswa</a>
+                    <a class="nav-link text-sky-400 fw-semibold px-2" href="/mahasiswa"><i class="bi bi-mortarboard me-1"></i> Data Mahasiswa (CRUD)</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ is_route('docs') ? 'active' : '' }}" href="{{ route('docs') }}">Docs</a>
+                    <a class="nav-link text-secondary hover-white px-2" href="/halo"><i class="bi bi-send me-1"></i> Test Route /halo</a>
                 </li>
-                @php
-                    $currentUser = \App\Models\User::current();
-                @endphp
-                @if ($currentUser)
-                    <li class="nav-item">
-                        <a class="nav-link {{ is_route('admin.dashboard', 'dashboard') ? 'active' : '' }}"
-                           href="{{ $currentUser->role === 'admin' ? route('admin.dashboard') : route('dashboard') }}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <form method="POST" action="{{ route('logout') }}" class="d-lg-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-secondary w-100 mt-2 mt-lg-0">Logout ({{ $currentUser->username }})</button>
-                        </form>
-                    </li>
-                @else
-                    @php
-                        $canRegister = false;
-                        if ($dbConnected) {
-                            try {
-                                $canRegister = \App\Models\Role::where('can_register', 1)->exists();
-                            } catch (\Throwable $e) {
-                                $canRegister = false;
-                            }
-                        }
-                    @endphp
-                    @if ($canRegister)
-                        <li class="nav-item">
-                            <a class="nav-link {{ is_route('register') ? 'active' : '' }}" href="{{ route('register') }}">Daftar</a>
-                        </li>
-                    @endif
-                    <li class="nav-item">
-                        <a class="btn btn-sm btn-brand rounded-pill px-3 d-inline-flex align-items-center gap-2 mt-2 mt-lg-0" href="{{ route('login') }}">
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <circle cx="8" cy="5" r="3" fill="currentColor" stroke="none"/>
-                                <path d="M2.5 14c0-3.6 2.9-5.8 5.5-5.8s5.5 2.2 5.5 5.8"/>
-                            </svg>
-                            Masuk
-                        </a>
-                    </li>
-                @endif
             </ul>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-sky-950 text-sky-300 border border-sky-800 font-monospace py-1.5 px-2.5">
+                    <span class="d-inline-block rounded-circle bg-sky-400 me-1" style="width: 6px; height: 6px;"></span>
+                    MVC Active
+                </span>
+            </div>
         </div>
     </div>
 </nav>

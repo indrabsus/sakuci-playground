@@ -1,227 +1,128 @@
 @extends('layouts.app')
 
-@section('title', config('app.name') . ' -- Kerangka PHP Ringan')
+@section('title', 'Sakuci Framework - Kerangka MVC Modern')
 
 @section('content')
+<div class="row justify-content-center pt-2 pb-5">
+    <div class="col-lg-10 text-center">
+        <!-- Tagline Badge -->
+        <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-4 border shadow-sm" style="background: rgba(14, 165, 233, 0.1); border-color: rgba(56, 189, 248, 0.3) !important;">
+            <span class="badge rounded-pill bg-sky-500 text-dark fw-bold text-xs">v1.0.0</span>
+            <span class="text-sky-300 small fw-medium">Kerangka MVC Ringan Modern Tanpa Composer</span>
+        </div>
 
-    {{-- Hero --}}
-    <section class="text-center py-4 py-lg-5">
-        <span class="badge rounded-pill badge-brand px-3 py-2 mb-3">Sakuci v1.0.0</span>
-
-        <h1 class="display-5 fw-bold mb-3">
-            Kerangka PHP rasa Laravel,<br class="d-none d-md-inline">
-            <span class="text-brand">tanpa Composer</span>
+        <!-- Main Headline -->
+        <h1 class="display-4 fw-extrabold mb-3 text-white tracking-tight" style="font-weight: 800; letter-spacing: -0.03em;">
+            Kerangka PHP Rasa Laravel, <br>
+            <span style="background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Murni Tanpa Perlu Composer</span>
         </h1>
 
-        <p class="lead text-secondary mx-auto mb-4" style="max-width: 620px;">
-            Route, Model, View, dan Controller dalam satu paket ringan.
-            Cukup PHP OOP murni -- salin foldernya, jalankan, selesai.
+        <!-- Subtitle -->
+        <p class="lead text-secondary mb-4 mx-auto" style="max-width: 720px; font-size: 1.08rem; line-height: 1.6;">
+            Didesain khusus untuk belajar &amp; membangun aplikasi web berbasis <strong>Model-View-Controller (MVC)</strong> secara instan di browser. Dilengkapi dengan <strong>Routing Ekspresif</strong>, <strong>Blade Templating</strong>, <strong>Active Record ORM</strong>, dan <strong>Terminal CLI</strong> interaktif.
         </p>
 
-        <div class="d-flex flex-wrap gap-2 justify-content-center">
-            <a class="btn btn-brand btn-lg px-4" href="#langkah">Mulai dari sini</a>
-            <a class="btn btn-outline-brand btn-lg px-4" href="https://github.com/indrabsus/sakuci-framework" target="_blank">GitHub</a>
+        <!-- CTA Buttons -->
+        <div class="d-flex flex-wrap justify-content-center gap-3 mb-4">
+            <a href="/mahasiswa" class="btn btn-gradient-sky btn-lg px-4 py-2.5 shadow-lg d-flex align-items-center gap-2">
+                <span>🎓 Uji CRUD Mahasiswa</span>
+                <i class="bi bi-arrow-right"></i>
+            </a>
+            <a href="/halo" class="btn btn-outline-secondary text-light btn-lg px-4 py-2.5 border-secondary d-flex align-items-center gap-2" style="background: rgba(30, 41, 59, 0.5);">
+                <span>⚡ Test Rute /halo</span>
+            </a>
         </div>
 
-        <p class="text-secondary small mt-3 mb-0">
-            Panduan langkah demi langkah ada di berkas
-            <code class="inline">TUTORIAL.md</code>
-        </p>
-    </section>
+        <div class="text-secondary small font-monospace">
+            <span>💡 Tip: Buka tab <strong class="text-sky-400">Terminal</strong> dan jalankan perintah <code class="text-sky-300 bg-dark px-1.5 py-0.5 rounded border border-secondary">php sakuci route:list</code></span>
+        </div>
+    </div>
+</div>
 
-    {{-- Instalasi --}}
-    <section class="row g-4 align-items-start mb-5">
-        <div class="col-lg-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-semibold mb-3">📥 Instalasi</h2>
-
-                    <p class="text-secondary mb-3">Pilih salah satu cara untuk memulai:</p>
-
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <h3 class="h6 fw-medium mb-2">Dari GitHub</h3>
-                            <pre class="code"><span class="cmt"># Clone repository</span>
-git clone https://github.com/indrabsus/sakuci-framework.git
-cd sakuci-framework
-
-<span class="cmt"># Siapkan .env</span>
-cp .env.example .env
-
-<span class="cmt"># Jalankan server</span>
-php sakuci serve</pre>
-                        </div>
-
-                        <div class="col-md-6">
-                            <h3 class="h6 fw-medium mb-2">Manual</h3>
-                            <ol class="mb-0 ps-4">
-                                <li>Download folder dari <a href="https://github.com/indrabsus/sakuci-framework" target="_blank">GitHub</a></li>
-                                <li>Ekstrak ke folder proyek</li>
-                                <li>Salin <code class="inline">.env.example</code> jadi <code class="inline">.env</code></li>
-                                <li>Jalankan <code class="inline">php sakuci serve</code></li>
-                                <li>Buka <code class="inline">http://127.0.0.1:8000</code></li>
-                            </ol>
-                        </div>
-                    </div>
+<!-- 3 Feature Cards Grid -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="card-body">
+                <div class="d-inline-flex p-2.5 rounded-3 mb-3" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; font-size: 1.4rem;">
+                    🎯
+                </div>
+                <h5 class="card-title fw-bold text-white mb-2">Blade Templating Engine</h5>
+                <p class="card-text text-secondary small mb-3">
+                    Gunakan hierarki layout induk <code>@extends('layouts.app')</code>, <code>@section('content')</code>, dan <code>@yield</code> layaknya template engine modern.
+                </p>
+                <div class="code-box p-2.5 font-monospace text-xs text-sky-300">
+                    <div>@extends('layouts.app')</div>
+                    <div class="text-secondary ps-2">@section('content')</div>
+                    <div class="text-white ps-3">&lt;h1&gt;Halo Sakuci&lt;/h1&gt;</div>
+                    <div class="text-secondary ps-2">@endsection</div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 
-    {{-- Langkah berikutnya --}}
-    <section id="langkah" class="row g-4 align-items-start mb-5">
+    <div class="col-md-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="card-body">
+                <div class="d-inline-flex p-2.5 rounded-3 mb-3" style="background: rgba(99, 102, 241, 0.15); color: #818cf8; font-size: 1.4rem;">
+                    📦
+                </div>
+                <h5 class="card-title fw-bold text-white mb-2">Active Record Model ORM</h5>
+                <p class="card-text text-secondary small mb-3">
+                    Kelola data database relasional secara elegan tanpa query raw SQL rumit. Terhubung langsung ke database latihan MySQL.
+                </p>
+                <div class="code-box p-2.5 font-monospace text-xs text-indigo-300">
+                    <div class="text-secondary">// Ambil &amp; manipulasi data</div>
+                    <div>$mhs = Mahasiswa::all();</div>
+                    <div class="text-secondary">Mahasiswa::create([...]);</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card card-custom h-100 p-3">
+            <div class="card-body">
+                <div class="d-inline-flex p-2.5 rounded-3 mb-3" style="background: rgba(16, 185, 129, 0.15); color: #34d399; font-size: 1.4rem;">
+                    💻
+                </div>
+                <h5 class="card-title fw-bold text-white mb-2">Interactive Terminal CLI</h5>
+                <p class="card-text text-secondary small mb-3">
+                    Manfaatkan perintah CLI mini-artisan langsung di browser untuk otomasi pembuatan model, controller, migrasi, dan cek rute.
+                </p>
+                <div class="code-box p-2.5 font-monospace text-xs text-emerald-300">
+                    <div>sakuci@cli:~$ php sakuci</div>
+                    <div class="text-secondary">make:model Produk</div>
+                    <div class="text-secondary">route:list</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Architecture Summary Card -->
+<div class="card card-custom p-4 border-secondary-subtle">
+    <div class="row align-items-center g-4">
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-semibold mb-3">Langkah berikutnya</h2>
-
-                    <ul class="list-unstyled d-grid gap-3 mb-0">
-                        <li class="d-flex gap-3">
-                            <span class="step-number">1</span>
-                            <div>
-                                <div class="fw-medium">Atur koneksi database</div>
-                                <div class="text-secondary small">
-                                    Edit berkas <code class="inline">.env</code>, lalu uji dengan
-                                    <code class="inline">php sakuci db:check</code>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="d-flex gap-3">
-                            <span class="step-number">2</span>
-                            <div>
-                                <div class="fw-medium">Buat tabel</div>
-                                <div class="text-secondary small">
-                                    <code class="inline">php sakuci make:migration create_buku_table</code>
-                                    lalu <code class="inline">php sakuci migrate</code>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="d-flex gap-3">
-                            <span class="step-number">3</span>
-                            <div>
-                                <div class="fw-medium">Buat model, controller, dan view</div>
-                                <div class="text-secondary small">
-                                    <code class="inline">make:model</code>,
-                                    <code class="inline">make:controller</code>,
-                                    <code class="inline">make:view</code>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="d-flex gap-3">
-                            <span class="step-number">4</span>
-                            <div>
-                                <div class="fw-medium">Daftarkan route</div>
-                                <div class="text-secondary small">
-                                    Tulis di <code class="inline">routes/web.php</code>, cek dengan
-                                    <code class="inline">php sakuci route:list</code>
-                                </div>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
+            <h5 class="fw-bold text-white mb-2 d-flex align-items-center gap-2">
+                <span>📁</span> Struktur Direktori Bersih &amp; Terorganisir
+            </h5>
+            <p class="text-secondary small mb-3">
+                Playground ini menyusun berkas aplikasi Anda persis seperti struktur project web produksi:
+            </p>
+            <div class="row g-2 text-xs font-monospace">
+                <div class="col-sm-6"><span class="text-sky-400">app/Controllers/</span> - Logika pengontrol aksi</div>
+                <div class="col-sm-6"><span class="text-sky-400">app/Models/</span> - Entitas model ORM database</div>
+                <div class="col-sm-6"><span class="text-sky-400">routes/web.php</span> - Peta rute URL aplikasi</div>
+                <div class="col-sm-6"><span class="text-sky-400">resources/views/</span> - Berkas template antarmuka</div>
             </div>
         </div>
-
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <h2 class="h5 fw-semibold mb-3">Perintah yang sering dipakai</h2>
-
-                    <pre class="code"><span class="cmt"># jalankan server</span>
-php sakuci serve
-
-<span class="cmt"># uji koneksi database</span>
-php sakuci db:check
-
-<span class="cmt"># lihat semua route</span>
-php sakuci route:list
-
-<span class="cmt"># bantuan lengkap</span>
-php sakuci</pre>
-                </div>
-            </div>
+        <div class="col-lg-5 text-lg-end">
+            <a href="/mahasiswa" class="btn btn-outline-primary px-3 py-2 text-xs font-monospace d-inline-flex align-items-center gap-1.5">
+                <span>Buka Data Mahasiswa</span>
+                <i class="bi bi-box-arrow-up-right"></i>
+            </a>
         </div>
-    </section>
-
-    {{-- Empat pilar --}}
-    <section>
-        <h2 class="h5 fw-semibold mb-3">Empat pilar</h2>
-
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            <div class="col">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-body border-0 pt-3 pb-0">
-                        <span class="fw-semibold">Route</span>
-                        <span class="text-secondary small ms-1">routes/web.php</span>
-                    </div>
-                    <div class="card-body">
-                        <pre class="code">Route::get('/buku',
-    [BukuController::class, 'index'])
-    ->name('buku.index');
-
-<span class="cmt">// 7 route CRUD sekaligus</span>
-Route::resource('buku',
-    BukuController::class);</pre>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-body border-0 pt-3 pb-0">
-                        <span class="fw-semibold">Controller</span>
-                        <span class="text-secondary small ms-1">app/Controllers</span>
-                    </div>
-                    <div class="card-body">
-                        <pre class="code">class BukuController extends Controller
-{
-    public function index()
-    {
-        return view('buku.index', [
-            'buku' => Buku::all(),
-        ]);
-    }
-}</pre>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-body border-0 pt-3 pb-0">
-                        <span class="fw-semibold">Model</span>
-                        <span class="text-secondary small ms-1">app/Models</span>
-                    </div>
-                    <div class="card-body">
-                        <pre class="code">Buku::all();
-Buku::find(1);
-Buku::where('stok', '>', 0)
-    ->latest()
-    ->paginate(10);
-
-Buku::create(['judul' => 'PHP']);</pre>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-header bg-body border-0 pt-3 pb-0">
-                        <span class="fw-semibold">View</span>
-                        <span class="text-secondary small ms-1">resources/views</span>
-                    </div>
-                    <div class="card-body">
-                        <pre class="code">@@extends('layouts.app')
-
-@@section('content')
-    @@foreach ($buku as $b)
-        &lt;h2&gt;&#123;&#123; $b-&gt;judul &#125;&#125;&lt;/h2&gt;
-    @@endforeach
-@@endsection</pre>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
+    </div>
+</div>
 @endsection
